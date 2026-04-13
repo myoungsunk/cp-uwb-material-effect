@@ -4,6 +4,7 @@ source_origin_offset_along_incident_m: -0.1
 observation_distance_lambda_scale: 0.5
 surface_normal_m: [0.0, 0.0, 1.0]
 reference_te_axis_m: [0.0, 1.0, 0.0]
+plane_of_incidence_axis_m: [1.0, 0.0, 0.0]
 baseline_case: baseline
 pec_case: pec
 refl_rect: refl_rect
