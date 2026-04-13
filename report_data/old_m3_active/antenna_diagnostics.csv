@@ -1,0 +1,15 @@
+theta_i_deg,alpha_deg,epsilon_lr_rr_db,epsilon_rl_ll_db,port_asym_db,a1_status,a2_status
+10,80,-4.1,-12.3,-0.09,FAIL,PASS
+15,75,-4.7,-11.4,-0.08,FAIL,PASS
+20,70,-5.4,-10.9,-0.07,FAIL,PASS
+25,65,-6.0,-10.6,-0.06,FAIL,PASS
+30,60,-6.6,-10.7,-0.05,FAIL,PASS
+35,55,-7.1,-10.9,-0.04,FAIL,PASS
+40,50,-7.6,-11.3,-0.04,FAIL,PASS
+45,45,-8.1,-11.8,-0.04,FAIL,PASS
+50,40,-8.7,-12.5,-0.03,FAIL,PASS
+55,35,-9.2,-13.4,-0.03,FAIL,PASS
+56,34,-9.4,-13.6,-0.03,FAIL,PASS
+60,30,-9.9,-14.4,-0.02,FAIL,PASS
+65,25,-10.6,-15.5,-0.02,FAIL,PASS
+70,20,-11.4,-16.5,-0.01,FAIL,PASS

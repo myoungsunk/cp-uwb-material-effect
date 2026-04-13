@@ -1,12 +1,17 @@
 """
-CP-UWB Reflection Coefficient Extraction Pipeline (v2)
-=======================================================
+CP-UWB Patch-CP Stage Reflection Metric Extraction Pipeline (v2)
+================================================================
 Key update: Co-term correction using M3 leakage ratio (NOT metal floor)
 
 Γ̂_C_corrected = Γ̂_C_raw − (h3_LR / h3_RR) · Γ̂_X
 
-This removes antenna leakage contamination proportional to each material's
-own cross reflection, using only M1/M3 data.
+This removes first-order antenna leakage contamination proportional to each
+material's own cross reflection, using only M1/M3 data.
+
+Important scope note:
+  - All outputs in this script are patch-inclusive system-stage results.
+  - Ideal plane-wave / material-only results are NOT produced here.
+  - Derived TE/TM outputs below are proxies inferred from patch-stage data.
 
 Convention:
   Channel h_pq: p = RX port, q = TX port
@@ -79,8 +84,9 @@ def load_sweep(path):
 
 
 print("=" * 65)
-print("  CP-UWB Reflection Coefficient Extraction Pipeline v2")
-print("  M3-based co-term leakage correction")
+print("  CP-UWB Patch-Stage Reflection Metric Extraction Pipeline v2")
+print("  M3-based first-order co-term leakage correction")
+print("  Scope: patch-inclusive system response, not ideal plane-wave material truth")
 print("=" * 65)
 
 print("\n[Step 0] Loading data...")
@@ -210,7 +216,7 @@ for mat in ['metal', 'glass', 'wood']:
 # STEP 5: TE/TM DERIVATION
 # ================================================================
 
-print("\n[Step 5] TE/TM derivation from CP quantities...")
+print("\n[Step 5] Derived TE/TM proxies from patch-stage CP quantities...")
 
 for mat in MATERIALS:
     for t in thetas:
@@ -239,8 +245,8 @@ print("  Done.")
 
 print("\n[Step 6] Validation checks...")
 
-# 6a. Metal reference
-print("\n  --- Metal PEC Validation ---")
+# 6a. Metal diagnostic
+print("\n  --- Metal Diagnostic (basis-dependent; not a strict zero criterion) ---")
 print(f"  {'θ_i':>5s} | {'|Γ_X|':>7s} | {'|Γ_C_raw|':>9s} | {'|Γ_C_corr|':>10s} | {'XPD_raw':>8s} | {'XPD_corr':>9s}")
 print("  " + "-" * 65)
 for t in thetas:
@@ -310,7 +316,7 @@ print("  [1/6] fig1_phase0_diagnostics.png")
 # ---- Figure 2: Co-term Correction Effect ----
 
 fig2, axes = plt.subplots(1, 3, figsize=(16, 5))
-fig2.suptitle("Co-term Correction: Raw vs M3-Corrected", fontweight='bold')
+fig2.suptitle("Patch-Stage Co-term Correction: Raw vs M3-Corrected", fontweight='bold')
 
 # (a) |Γ_C| raw vs corrected for all materials
 ax = axes[0]
@@ -331,7 +337,7 @@ ax.plot(thetas, raw, 'D--', color='gray', label='Metal raw', markersize=5)
 ax.plot(thetas, cor, 'D-', color='#1e293b', label='Metal corrected', markersize=5)
 ax.axhline(0, color='black', ls='-', lw=0.5)
 ax.set_xlabel(r'$\theta_i$ [deg]'); ax.set_ylabel(r'$|\hat{\Gamma}_C|$ (linear)')
-ax.set_title('(b) Metal Co-term (ideal → 0)')
+ax.set_title('(b) Metal Co-term Diagnostic (basis-dependent)')
 ax.legend(); ax.grid(True, alpha=0.3)
 
 # (c) XPD improvement
@@ -356,7 +362,7 @@ print("  [2/6] fig2_coterm_correction.png")
 # ---- Figure 3: Main Results — Γ_X, Γ_C, XPD vs θ_i ----
 
 fig3, axes = plt.subplots(1, 3, figsize=(16, 5))
-fig3.suptitle("Calibrated CP Reflection Coefficients (Band-Averaged)", fontweight='bold')
+fig3.suptitle("Patch-Stage Calibrated CP Metrics (Band-Averaged)", fontweight='bold')
 
 # (a) |Γ_X|
 ax = axes[0]
@@ -364,7 +370,7 @@ for mat in MATERIALS:
     vals = [np.mean(np.abs(gamma[mat][t]['Gamma_X'])) for t in thetas]
     ax.plot(thetas, vals, f'{MAT_MARKERS[mat]}-', label=MAT_LABELS[mat], color=MAT_COLORS[mat], markersize=5)
 ax.set_xlabel(r'$\theta_i$ [deg]'); ax.set_ylabel(r'$|\hat{\Gamma}_X|$ (linear)')
-ax.set_title(r'(a) Cross $|\hat{\Gamma}_X|$ — Main Reflection')
+ax.set_title(r'(a) Cross $|\hat{\Gamma}_X|$ — Main Patch-Stage Reflection Metric')
 ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
 
 # (b) |Γ_C_corr|
@@ -373,7 +379,7 @@ for mat in MATERIALS:
     vals = [np.mean(np.abs(gamma[mat][t]['Gamma_C_corr'])) for t in thetas]
     ax.plot(thetas, vals, f'{MAT_MARKERS[mat]}-', label=MAT_LABELS[mat], color=MAT_COLORS[mat], markersize=5)
 ax.set_xlabel(r'$\theta_i$ [deg]'); ax.set_ylabel(r'$|\hat{\Gamma}_C^{corr}|$ (linear)')
-ax.set_title(r'(b) Co $|\hat{\Gamma}_C^{corr}|$ — M3-Corrected')
+ax.set_title(r'(b) Co $|\hat{\Gamma}_C^{corr}|$ — M3-Corrected Patch-Stage Metric')
 ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
 
 # (c) XPD (corrected)
@@ -395,7 +401,7 @@ print("  [3/6] fig3_main_results.png")
 # ---- Figure 4: R_TE / R_TM — Brewster Analysis ----
 
 fig4, axes = plt.subplots(1, 3, figsize=(16, 5))
-fig4.suptitle("Derived TE/TM Reflection Coefficients (M3-Corrected)", fontweight='bold')
+fig4.suptitle("Derived TE/TM Proxies from Patch-Stage CP Metrics", fontweight='bold')
 
 # (a) |R_TE|
 ax = axes[0]
@@ -403,7 +409,7 @@ for mat in MATERIALS:
     vals = [np.mean(np.abs(gamma[mat][t]['R_TE'])) for t in thetas]
     ax.plot(thetas, vals, f'{MAT_MARKERS[mat]}-', label=MAT_LABELS[mat], color=MAT_COLORS[mat], markersize=5)
 ax.set_xlabel(r'$\theta_i$ [deg]'); ax.set_ylabel(r'$|R_{TE}|$ (linear)')
-ax.set_title(r'(a) $|R_{TE}|$'); ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
+ax.set_title(r'(a) $|R_{TE}|$ proxy'); ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
 
 # (b) |R_TM|
 ax = axes[1]
@@ -411,7 +417,7 @@ for mat in ['concrete', 'glass', 'wood']:
     vals = [np.mean(np.abs(gamma[mat][t]['R_TM'])) for t in thetas]
     ax.plot(thetas, vals, f'{MAT_MARKERS[mat]}-', label=MAT_LABELS[mat], color=MAT_COLORS[mat], markersize=5)
 ax.set_xlabel(r'$\theta_i$ [deg]'); ax.set_ylabel(r'$|R_{TM}|$ (linear)')
-ax.set_title(r'(b) $|R_{TM}|$ — Brewster Dip'); ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
+ax.set_title(r'(b) $|R_{TM}|$ proxy — Brewster-like dip'); ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
 
 # (c) Raw vs Corrected R_TM comparison
 ax = axes[2]
@@ -421,7 +427,7 @@ for mat in ['concrete', 'glass', 'wood']:
     ax.plot(thetas, raw, f'{MAT_MARKERS[mat]}--', color=MAT_COLORS[mat], alpha=0.4, markersize=4)
     ax.plot(thetas, cor, f'{MAT_MARKERS[mat]}-', color=MAT_COLORS[mat], label=MAT_LABELS[mat], markersize=5)
 ax.set_xlabel(r'$\theta_i$ [deg]'); ax.set_ylabel(r'$|R_{TM}|$ (linear)')
-ax.set_title(r'(c) $|R_{TM}|$ — dashed=raw, solid=corrected')
+ax.set_title(r'(c) $|R_{TM}|$ proxy — dashed=raw, solid=corrected')
 ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
 
 fig4.tight_layout()
@@ -433,7 +439,7 @@ print("  [4/6] fig4_TE_TM_brewster.png")
 
 key_angles = [20, 35, 56, 65]
 fig5, axes = plt.subplots(len(key_angles), 3, figsize=(16, 4*len(key_angles)))
-fig5.suptitle("Frequency-Resolved Reflection Coefficients at Key Angles", fontweight='bold', y=1.01)
+fig5.suptitle("Frequency-Resolved Patch-Stage Metrics at Key Angles", fontweight='bold', y=1.01)
 
 for row, t in enumerate(key_angles):
     # |Γ_X|
@@ -442,7 +448,7 @@ for row, t in enumerate(key_angles):
         ax.plot(freq, 20*np.log10(np.abs(gamma[mat][t]['Gamma_X'])),
                 label=MAT_LABELS[mat], color=MAT_COLORS[mat], lw=0.8, alpha=0.85)
     ax.set_ylabel(r'$|\hat{\Gamma}_X|$ [dB]')
-    ax.set_title(f'θ_i={t}° — Cross')
+    ax.set_title(f'θ_i={t}° — Cross patch-stage metric')
     ax.legend(fontsize=7); ax.grid(True, alpha=0.3)
     
     # |Γ_C_corr|
@@ -451,7 +457,7 @@ for row, t in enumerate(key_angles):
         ax.plot(freq, 20*np.log10(np.maximum(np.abs(gamma[mat][t]['Gamma_C_corr']), 1e-6)),
                 label=MAT_LABELS[mat], color=MAT_COLORS[mat], lw=0.8, alpha=0.85)
     ax.set_ylabel(r'$|\hat{\Gamma}_C^{corr}|$ [dB]')
-    ax.set_title(f'θ_i={t}° — Co (corrected)')
+    ax.set_title(f'θ_i={t}° — Co patch-stage metric (corrected)')
     ax.legend(fontsize=7); ax.grid(True, alpha=0.3)
     
     # |R_TM|
@@ -460,7 +466,7 @@ for row, t in enumerate(key_angles):
         ax.plot(freq, 20*np.log10(np.maximum(np.abs(gamma[mat][t]['R_TM']), 1e-6)),
                 label=MAT_LABELS[mat], color=MAT_COLORS[mat], lw=0.8, alpha=0.85)
     ax.set_ylabel(r'$|R_{TM}|$ [dB]')
-    ax.set_title(f'θ_i={t}° — R_TM')
+    ax.set_title(f'θ_i={t}° — R_TM proxy')
     ax.legend(fontsize=7); ax.grid(True, alpha=0.3)
     
     if row == len(key_angles) - 1:
@@ -506,7 +512,7 @@ print("  [6/6] fig6_reciprocity.png")
 # ================================================================
 
 print("\n" + "=" * 65)
-print("  FINAL NUMERICAL SUMMARY (Band-Averaged, M3-Corrected)")
+print("  FINAL NUMERICAL SUMMARY (Patch-Stage, Band-Averaged, M3-Corrected)")
 print("=" * 65)
 
 for mat in MATERIALS:

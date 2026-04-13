@@ -1,0 +1,12 @@
+status=failed
+design=0.TE_PEC
+job=z_m
+grid_size=5
+message=SetActiveDesign(string designName) -> IDispatch(0.TE_PEC) - call failed. Logs or message window might have more details
+
+Traceback (most recent call last):
+  File "D:/codex/ansys_automation/downloads/CP_global_test_center5x5_pipeline/20260411_104056/hfss_export_center_grid_job.py", line 434, in <module>
+    export_target()
+  File "D:/codex/ansys_automation/downloads/CP_global_test_center5x5_pipeline/20260411_104056/hfss_export_center_grid_job.py", line 355, in export_target
+    oDesign = oProject.SetActiveDesign(TARGET_DESIGN)
+Exception: SetActiveDesign(string designName) -> IDispatch(0.TE_PEC) - call failed. Logs or message window might have more details
