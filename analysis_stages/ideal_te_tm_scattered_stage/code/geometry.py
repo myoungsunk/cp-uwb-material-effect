@@ -14,6 +14,7 @@ class GeometryConfig:
     source_origin_m: np.ndarray
     surface_normal_m: np.ndarray
     reference_te_axis_m: np.ndarray
+    plane_of_incidence_axis_m: np.ndarray
     source_origin_offset_along_incident_m: float = 0.0
     observation_distance_lambda_scale: float = 0.5
     baseline_case: str = "baseline"
@@ -27,6 +28,7 @@ class GeometryConfig:
     fit_warn_threshold: float = 5e-2
     smoothness_jump_db: float = 3.0
     passivity_tolerance: float = 5e-2
+    expected_point_count: int = 401
     debug_maps: bool = False
 
 
@@ -73,11 +75,32 @@ def load_geometry_config(path: Path) -> GeometryConfig:
     reference_te_axis = np.asarray(data.get("reference_te_axis_m", [0.0, 1.0, 0.0]), dtype=float)
     if reference_te_axis.shape != (3,):
         raise ValueError("reference_te_axis_m must contain exactly three numeric values.")
+    surface_normal_hat = _unit_vector(surface_normal, "surface_normal_m")
+    reference_te_axis_hat = _orthogonal_tangent(
+        reference_te_axis,
+        surface_normal_hat,
+        "reference_te_axis_m",
+    )
+
+    plane_of_incidence_axis = np.asarray(
+        data.get(
+            "plane_of_incidence_axis_m",
+            np.cross(reference_te_axis_hat, surface_normal_hat).tolist(),
+        ),
+        dtype=float,
+    )
+    if plane_of_incidence_axis.shape != (3,):
+        raise ValueError("plane_of_incidence_axis_m must contain exactly three numeric values.")
 
     return GeometryConfig(
         source_origin_m=source_origin,
-        surface_normal_m=_unit_vector(surface_normal, "surface_normal_m"),
-        reference_te_axis_m=_unit_vector(reference_te_axis, "reference_te_axis_m"),
+        surface_normal_m=surface_normal_hat,
+        reference_te_axis_m=reference_te_axis_hat,
+        plane_of_incidence_axis_m=_orthogonal_tangent(
+            plane_of_incidence_axis,
+            surface_normal_hat,
+            "plane_of_incidence_axis_m",
+        ),
         source_origin_offset_along_incident_m=float(
             data.get("source_origin_offset_along_incident_m", 0.0)
         ),
@@ -95,6 +118,7 @@ def load_geometry_config(path: Path) -> GeometryConfig:
         fit_warn_threshold=float(data.get("fit_warn_threshold", 5e-2)),
         smoothness_jump_db=float(data.get("smoothness_jump_db", 3.0)),
         passivity_tolerance=float(data.get("passivity_tolerance", 5e-2)),
+        expected_point_count=int(data.get("expected_point_count", 401)),
         debug_maps=bool(data.get("debug_maps", False)),
     )
 
@@ -111,27 +135,53 @@ def _unit_vector(vec: np.ndarray, name: str) -> np.ndarray:
     return arr / norm
 
 
-def incident_hat(theta_deg: float) -> np.ndarray:
+def _orthogonal_tangent(vec: np.ndarray, normal_hat: np.ndarray, name: str) -> np.ndarray:
+    arr = np.asarray(vec, dtype=float)
+    tangent = arr - np.dot(arr, normal_hat) * normal_hat
+    norm = float(np.linalg.norm(tangent))
+    if norm == 0.0:
+        raise ValueError(f"{name} must not be parallel to the surface normal.")
+    return tangent / norm
+
+
+def _surface_normal(geom: GeometryConfig | None) -> np.ndarray:
+    if geom is None:
+        return np.array([0.0, 0.0, 1.0], dtype=float)
+    return np.asarray(geom.surface_normal_m, dtype=float)
+
+
+def plane_of_incidence_axis(geom: GeometryConfig | None) -> np.ndarray:
+    normal_hat = _surface_normal(geom)
+    if geom is None:
+        return np.array([1.0, 0.0, 0.0], dtype=float)
+    return _orthogonal_tangent(geom.plane_of_incidence_axis_m, normal_hat, "plane_of_incidence_axis_m")
+
+
+def incident_hat(theta_deg: float, geom: GeometryConfig | None = None) -> np.ndarray:
     theta = theta_rad(theta_deg)
-    return np.array([np.sin(theta), 0.0, np.cos(theta)], dtype=float)
+    axis_hat = plane_of_incidence_axis(geom)
+    normal_hat = _surface_normal(geom)
+    return _unit_vector(np.sin(theta) * axis_hat + np.cos(theta) * normal_hat, "incident_hat")
 
 
-def reflected_hat(theta_deg: float) -> np.ndarray:
+def reflected_hat(theta_deg: float, geom: GeometryConfig | None = None) -> np.ndarray:
     theta = theta_rad(theta_deg)
-    return np.array([np.sin(theta), 0.0, -np.cos(theta)], dtype=float)
+    axis_hat = plane_of_incidence_axis(geom)
+    normal_hat = _surface_normal(geom)
+    return _unit_vector(np.sin(theta) * axis_hat - np.cos(theta) * normal_hat, "reflected_hat")
 
 
-def transmitted_hat(theta_deg: float) -> np.ndarray:
-    return incident_hat(theta_deg)
+def transmitted_hat(theta_deg: float, geom: GeometryConfig | None = None) -> np.ndarray:
+    return incident_hat(theta_deg, geom)
 
 
-def propagation_hat(theta_deg: float, mode: str) -> np.ndarray:
+def propagation_hat(theta_deg: float, mode: str, geom: GeometryConfig | None = None) -> np.ndarray:
     if mode == "incident":
-        return incident_hat(theta_deg)
+        return incident_hat(theta_deg, geom)
     if mode == "reflected":
-        return reflected_hat(theta_deg)
+        return reflected_hat(theta_deg, geom)
     if mode == "transmitted":
-        return transmitted_hat(theta_deg)
+        return transmitted_hat(theta_deg, geom)
     raise ValueError(f"Unsupported propagation mode: {mode}")
 
 
@@ -144,7 +194,7 @@ def te_basis(theta_deg: float, geom: GeometryConfig) -> np.ndarray:
     configured reference TE axis projected onto the plane transverse to k_i.
     """
 
-    k_inc = incident_hat(theta_deg)
+    k_inc = incident_hat(theta_deg, geom)
     candidate = np.cross(geom.surface_normal_m, k_inc)
     if np.linalg.norm(candidate) > 0.0:
         return _unit_vector(candidate, "te_basis")
@@ -167,7 +217,7 @@ def tm_basis(theta_deg: float, mode: str, geom: GeometryConfig) -> np.ndarray:
     """
 
     te = te_basis(theta_deg, geom)
-    k_q = propagation_hat(theta_deg, mode)
+    k_q = propagation_hat(theta_deg, mode, geom)
     return _unit_vector(np.cross(te, k_q), f"tm_basis[{mode}]")
 
 
@@ -180,7 +230,7 @@ def source_origin(theta_deg: float, geom: GeometryConfig) -> np.ndarray:
     convention while still supporting a fixed absolute origin.
     """
 
-    return geom.source_origin_m + geom.source_origin_offset_along_incident_m * incident_hat(theta_deg)
+    return geom.source_origin_m + geom.source_origin_offset_along_incident_m * incident_hat(theta_deg, geom)
 
 
 def observation_distance_m(
@@ -213,7 +263,7 @@ def plane_center(
         freq_hz,
         geom,
         observation_distance_lambda_scale=observation_distance_lambda_scale,
-    ) * propagation_hat(theta_deg, mode)
+    ) * propagation_hat(theta_deg, mode, geom)
 
 
 def wide_plane_axes(theta_deg: float, rect: str, geom: GeometryConfig) -> tuple[np.ndarray, np.ndarray]:

@@ -26,7 +26,7 @@ def analytic_incident_field(
     if points.ndim != 2 or points.shape[1] != 3:
         raise ValueError("points_xyz must have shape (N, 3).")
 
-    khat = incident_hat(theta_deg)
+    khat = incident_hat(theta_deg, geom)
     e0 = incident_polarization_vector(theta_deg, pol, geom).astype(complex)
     orthogonality = float(np.abs(np.dot(e0.real, khat)))
     if orthogonality > 1e-9:

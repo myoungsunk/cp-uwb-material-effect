@@ -26,8 +26,8 @@ CANONICAL_ALIASES = {
     "ez_imag": ["nearezimag", "ezimag", "imagez", "imagnearez"],
 }
 
-REQUIRED_MANIFEST_COLUMNS = ["case", "pol", "rect", "csv_path"]
-OPTIONAL_MANIFEST_COLUMNS = ["f_hz", "theta_deg", "field_type", "observation_distance_lambda_scale"]
+REQUIRED_MANIFEST_COLUMNS = ["case", "pol", "rect", "csv_path", "field_type"]
+OPTIONAL_MANIFEST_COLUMNS = ["f_hz", "theta_deg", "observation_distance_lambda_scale", "run_label"]
 
 WIDE_GRID_PREFIX_RE = re.compile(
     r"^(?P<kind>mag|ang_deg)\(NearE(?P<axis>[XYZ])\)\s+\[[^\]]+\]\s+-\s+_v='(?P<v>[^']+)'",
@@ -149,9 +149,13 @@ def _parse_theta_to_deg(value: str) -> float:
     raise ValueError(f"Unsupported angle unit: {unit!r}")
 
 
-def _field_type_or_default(value) -> str:
+def _normalize_field_type(value) -> str:
+    if pd.isna(value):
+        raise ValueError("Manifest field_type must be explicitly set to 'total' or 'scattered'.")
     text = str(value).strip().lower()
-    return text if text in {"total", "scattered"} else "scattered"
+    if text in {"total", "scattered"}:
+        return text
+    raise ValueError(f"Unsupported manifest field_type: {value!r}")
 
 
 def _parse_wide_grid_header(header: str) -> dict[str, str] | None:
@@ -217,7 +221,7 @@ def _wide_hfss_grid_to_normalized(raw: pd.DataFrame, manifest_row: pd.Series, ge
         pd.Series([manifest_row.get("observation_distance_lambda_scale", np.nan)]),
         errors="coerce",
     ).iloc[0]
-    field_type = _field_type_or_default(manifest_row.get("field_type", "scattered"))
+    field_type = _normalize_field_type(manifest_row.get("field_type"))
 
     for (freq_hz, theta_deg, header_obs_scale, v_m), mapping in sorted(column_meta.items()):
         required = [
@@ -317,7 +321,7 @@ def read_manifest(path: Path, stage_root: Path) -> pd.DataFrame:
     )
     manifest["f_hz"] = pd.to_numeric(manifest["f_hz"], errors="coerce")
     manifest["theta_deg"] = pd.to_numeric(manifest["theta_deg"], errors="coerce")
-    manifest["field_type"] = manifest["field_type"].map(_field_type_or_default)
+    manifest["field_type"] = manifest["field_type"].map(_normalize_field_type)
     manifest["observation_distance_lambda_scale"] = pd.to_numeric(
         manifest["observation_distance_lambda_scale"],
         errors="coerce",
@@ -380,7 +384,7 @@ def normalize_measurement_csv(manifest_row: pd.Series, geom: GeometryConfig | No
     else:
         normalized["theta_deg"] = manifest_row["theta_deg"]
 
-    normalized["field_type"] = _field_type_or_default(manifest_row.get("field_type", "scattered"))
+    normalized["field_type"] = _normalize_field_type(manifest_row.get("field_type"))
     normalized["observation_distance_lambda_scale"] = pd.to_numeric(
         pd.Series([manifest_row.get("observation_distance_lambda_scale", np.nan)]),
         errors="coerce",

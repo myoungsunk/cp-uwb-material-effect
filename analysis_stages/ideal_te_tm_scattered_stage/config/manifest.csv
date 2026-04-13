@@ -1,1 +1,1 @@
-case,pol,rect,f_hz,theta_deg,csv_path
+case,pol,rect,f_hz,theta_deg,field_type,observation_distance_lambda_scale,run_label,csv_path

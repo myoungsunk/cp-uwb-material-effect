@@ -9,7 +9,15 @@ import pandas as pd
 
 from cp_transform import build_cp_truth_table
 from estimator import matched_plane_wave_estimator
-from geometry import GeometryConfig, incident_hat, load_geometry_config, reflected_hat, transmitted_hat
+from geometry import (
+    GeometryConfig,
+    incident_hat,
+    load_geometry_config,
+    reflected_hat,
+    te_basis,
+    tm_basis,
+    transmitted_hat,
+)
 from incident_field import analytic_incident_field
 from io_adapter import load_normalized_measurements, read_manifest
 from projection import project_vector_field
@@ -24,6 +32,8 @@ from qc import (
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
+
+COMPLEX_COMPONENT_SUFFIXES = ("real", "imag", "mag", "phase_deg")
 
 
 def find_stage_root(start: Path) -> Path:
@@ -41,6 +51,369 @@ def complex_columns(prefix: str, value: complex) -> dict:
         f"{prefix}_mag": float(np.abs(value)),
         f"{prefix}_phase_deg": float(np.rad2deg(np.angle(value))),
     }
+
+
+def truth_table_id_columns(df: pd.DataFrame) -> list[str]:
+    columns = ["case", "material", "f_hz", "theta_deg", "observation_distance_lambda_scale"]
+    if "run_label" in df.columns:
+        columns.insert(2, "run_label")
+    return [column for column in columns if column in df.columns]
+
+
+def measurement_dataset_columns(df: pd.DataFrame) -> list[str]:
+    columns = ["case", "pol", "rect", "f_hz", "theta_deg", "observation_distance_lambda_scale"]
+    if "run_label" in df.columns:
+        columns.append("run_label")
+    return columns
+
+
+def measurement_grid_columns(df: pd.DataFrame) -> list[str]:
+    columns = ["rect", "f_hz", "theta_deg", "observation_distance_lambda_scale"]
+    if "run_label" in df.columns and df["run_label"].fillna("").astype(str).str.strip().ne("").any():
+        columns.append("run_label")
+    return columns
+
+
+def theta_grid_from_measurements(measurements: pd.DataFrame) -> list[float]:
+    return sorted(float(value) for value in measurements["theta_deg"].dropna().unique())
+
+
+def point_cloud_signature(sub_df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    ordered = sub_df.sort_values(["point_id", "x", "y", "z"]).reset_index(drop=True)
+    point_ids = pd.to_numeric(ordered["point_id"], errors="coerce").to_numpy(dtype=float)
+    xyz = ordered[["x", "y", "z"]].to_numpy(dtype=float)
+    signature = np.column_stack([point_ids, xyz])
+    return signature, xyz
+
+
+def validate_point_cloud_consistency(df: pd.DataFrame, expected_n: int = 401) -> list[dict]:
+    qc_rows: list[dict] = []
+    dataset_columns = measurement_dataset_columns(df)
+    grid_columns = measurement_grid_columns(df)
+    reference_signatures: dict[tuple, tuple[tuple, np.ndarray]] = {}
+
+    for dataset_key, sub in df.groupby(dataset_columns, dropna=False, sort=False):
+        ordered = sub.sort_values(["point_id", "x", "y", "z"]).reset_index(drop=True)
+        key_map = dict(zip(dataset_columns, dataset_key))
+        material = material_from_case(str(key_map["case"]))
+        run_label = str(key_map.get("run_label", ""))
+        num_points = int(len(ordered))
+        unique_point_ids = int(ordered["point_id"].nunique(dropna=False))
+
+        qc_rows.append(
+            {
+                "case": key_map["case"],
+                "material": material,
+                "pol": key_map["pol"],
+                "rect": key_map["rect"],
+                "run_label": run_label,
+                "f_hz": float(key_map["f_hz"]),
+                "theta_deg": float(key_map["theta_deg"]),
+                "observation_distance_lambda_scale": float(key_map["observation_distance_lambda_scale"]),
+                "metric": "unexpected_point_count",
+                "value": num_points,
+                "status": "ok" if num_points == expected_n else "fail",
+                "detail": f"Expected {expected_n} points per normalized rect export.",
+            }
+        )
+        qc_rows.append(
+            {
+                "case": key_map["case"],
+                "material": material,
+                "pol": key_map["pol"],
+                "rect": key_map["rect"],
+                "run_label": run_label,
+                "f_hz": float(key_map["f_hz"]),
+                "theta_deg": float(key_map["theta_deg"]),
+                "observation_distance_lambda_scale": float(key_map["observation_distance_lambda_scale"]),
+                "metric": "duplicate_point_id_count",
+                "value": float(num_points - unique_point_ids),
+                "status": "ok" if num_points == unique_point_ids else "fail",
+                "detail": "Duplicate point_id values must not exist within one rect export.",
+            }
+        )
+
+        signature, _ = point_cloud_signature(ordered)
+        grid_key = tuple(key_map[column] for column in grid_columns)
+        reference = reference_signatures.get(grid_key)
+        if reference is None:
+            reference_signatures[grid_key] = (dataset_key, signature)
+            continue
+
+        reference_key, reference_signature = reference
+        same_shape = signature.shape == reference_signature.shape
+        same_order = same_shape and np.array_equal(signature[:, 0], reference_signature[:, 0])
+        same_xyz = same_shape and np.allclose(signature[:, 1:], reference_signature[:, 1:], atol=1e-12, rtol=0.0)
+        reference_case = reference_key[dataset_columns.index("case")]
+        reference_pol = reference_key[dataset_columns.index("pol")]
+
+        qc_rows.extend(
+            [
+                {
+                    "case": key_map["case"],
+                    "material": material,
+                    "pol": key_map["pol"],
+                    "rect": key_map["rect"],
+                    "run_label": run_label,
+                    "f_hz": float(key_map["f_hz"]),
+                    "theta_deg": float(key_map["theta_deg"]),
+                    "observation_distance_lambda_scale": float(key_map["observation_distance_lambda_scale"]),
+                    "metric": "point_id_order_match",
+                    "value": float(same_order),
+                    "status": "ok" if same_order else "fail",
+                    "detail": f"point_id ordering must match the reference grid ({reference_case}, {reference_pol}).",
+                },
+                {
+                    "case": key_map["case"],
+                    "material": material,
+                    "pol": key_map["pol"],
+                    "rect": key_map["rect"],
+                    "run_label": run_label,
+                    "f_hz": float(key_map["f_hz"]),
+                    "theta_deg": float(key_map["theta_deg"]),
+                    "observation_distance_lambda_scale": float(key_map["observation_distance_lambda_scale"]),
+                    "metric": "xyz_grid_match",
+                    "value": float(same_xyz),
+                    "status": "ok" if same_xyz else "fail",
+                    "detail": f"XYZ samples must match the reference grid ({reference_case}, {reference_pol}).",
+                },
+            ]
+        )
+
+    return qc_rows
+
+
+def infer_field_type_from_pec_trans(exported_field: np.ndarray, incident_field: np.ndarray) -> str:
+    incident_norm = float(np.linalg.norm(incident_field))
+    if incident_norm == 0.0:
+        raise ValueError("Incident field norm is zero; cannot infer field type from PEC transmission data.")
+    rho_total = float(np.linalg.norm(exported_field) / incident_norm)
+    rho_scattered = float(np.linalg.norm(exported_field + incident_field) / incident_norm)
+    return "total" if rho_total < rho_scattered else "scattered"
+
+
+def validate_pec_field_type_lock(measurements: pd.DataFrame, geom: GeometryConfig) -> list[dict]:
+    qc_rows: list[dict] = []
+    dataset_columns = measurement_dataset_columns(measurements)
+    pec_trans = measurements[
+        (measurements["case"] == geom.pec_case) & (measurements["rect"] == geom.trans_rect)
+    ].copy()
+
+    if pec_trans.empty:
+        qc_rows.append(
+            {
+                "case": geom.pec_case,
+                "material": geom.pec_case,
+                "pol": "both",
+                "rect": geom.trans_rect,
+                "run_label": "",
+                "f_hz": np.nan,
+                "theta_deg": np.nan,
+                "observation_distance_lambda_scale": np.nan,
+                "metric": "pec_trans_field_type_reference_presence",
+                "value": np.nan,
+                "status": "warn",
+                "detail": "No PEC transmission-plane export was available for field-type inference.",
+            }
+        )
+        return qc_rows
+
+    for dataset_key, sub in pec_trans.groupby(dataset_columns, dropna=False, sort=False):
+        key_map = dict(zip(dataset_columns, dataset_key))
+        material = material_from_case(str(key_map["case"]))
+        run_label = str(key_map.get("run_label", ""))
+        ordered = sub.sort_values(["point_id", "x", "y", "z"]).reset_index(drop=True)
+        field_types = ordered["field_type"].dropna().astype(str).str.lower().unique()
+        if len(field_types) != 1:
+            qc_rows.append(
+                {
+                    "case": key_map["case"],
+                    "material": material,
+                    "pol": key_map["pol"],
+                    "rect": key_map["rect"],
+                    "run_label": run_label,
+                    "f_hz": float(key_map["f_hz"]),
+                    "theta_deg": float(key_map["theta_deg"]),
+                    "observation_distance_lambda_scale": float(key_map["observation_distance_lambda_scale"]),
+                    "metric": "manifest_field_type_cardinality",
+                    "value": float(len(field_types)),
+                    "status": "fail",
+                    "detail": "Each normalized dataset must carry exactly one manifest field_type value.",
+                }
+            )
+            continue
+
+        manifest_field_type = str(field_types[0])
+        points, exported_field = extract_arrays(ordered)
+        incident_field = analytic_incident_field(
+            points,
+            float(key_map["f_hz"]),
+            float(key_map["theta_deg"]),
+            str(key_map["pol"]),
+            geom,
+        )
+        incident_norm = float(np.linalg.norm(incident_field))
+        rho_total = float(np.linalg.norm(exported_field) / incident_norm)
+        rho_scattered = float(np.linalg.norm(exported_field + incident_field) / incident_norm)
+        inferred_field_type = infer_field_type_from_pec_trans(exported_field, incident_field)
+
+        qc_rows.extend(
+            [
+                {
+                    "case": key_map["case"],
+                    "material": material,
+                    "pol": key_map["pol"],
+                    "rect": key_map["rect"],
+                    "run_label": run_label,
+                    "f_hz": float(key_map["f_hz"]),
+                    "theta_deg": float(key_map["theta_deg"]),
+                    "observation_distance_lambda_scale": float(key_map["observation_distance_lambda_scale"]),
+                    "metric": "pec_trans_rho_total",
+                    "value": rho_total,
+                    "status": "ok",
+                    "detail": "||E_export|| / ||E_inc|| on the PEC transmission plane.",
+                },
+                {
+                    "case": key_map["case"],
+                    "material": material,
+                    "pol": key_map["pol"],
+                    "rect": key_map["rect"],
+                    "run_label": run_label,
+                    "f_hz": float(key_map["f_hz"]),
+                    "theta_deg": float(key_map["theta_deg"]),
+                    "observation_distance_lambda_scale": float(key_map["observation_distance_lambda_scale"]),
+                    "metric": "pec_trans_rho_scattered",
+                    "value": rho_scattered,
+                    "status": "ok",
+                    "detail": "||E_export + E_inc|| / ||E_inc|| on the PEC transmission plane.",
+                },
+                {
+                    "case": key_map["case"],
+                    "material": material,
+                    "pol": key_map["pol"],
+                    "rect": key_map["rect"],
+                    "run_label": run_label,
+                    "f_hz": float(key_map["f_hz"]),
+                    "theta_deg": float(key_map["theta_deg"]),
+                    "observation_distance_lambda_scale": float(key_map["observation_distance_lambda_scale"]),
+                    "metric": "field_type_manifest_lock",
+                    "value": float(manifest_field_type == inferred_field_type),
+                    "status": "ok" if manifest_field_type == inferred_field_type else "fail",
+                    "detail": (
+                        f"Manifest field_type={manifest_field_type!r}, "
+                        f"inferred from PEC transmission data={inferred_field_type!r}."
+                    ),
+                },
+            ]
+        )
+
+    return qc_rows
+
+
+def validate_geometry_lock(
+    theta_grid: list[float] | np.ndarray,
+    geom: GeometryConfig,
+    locked_wide_truth: pd.DataFrame | None = None,
+) -> list[dict]:
+    qc_rows: list[dict] = []
+    tolerance = 1e-9
+    theta_values = [float(theta) for theta in theta_grid]
+
+    for theta_deg in theta_values:
+        k_inc = incident_hat(theta_deg, geom)
+        te = te_basis(theta_deg, geom)
+        tm_inc = tm_basis(theta_deg, "incident", geom)
+        tm_refl = tm_basis(theta_deg, "reflected", geom)
+        tm_trans = tm_basis(theta_deg, "transmitted", geom)
+
+        geometry_checks = [
+            ("TE", "incident", float(abs(np.dot(te, k_inc))), "e_TE dot k_incident"),
+            ("TM", "incident", float(abs(np.dot(tm_inc, k_inc))), "e_TM,incident dot k_incident"),
+            ("TM", "reflected", float(abs(np.dot(tm_refl, reflected_hat(theta_deg, geom)))), "e_TM,reflected dot k_reflected"),
+            ("TM", "transmitted", float(abs(np.dot(tm_trans, transmitted_hat(theta_deg, geom)))), "e_TM,transmitted dot k_transmitted"),
+            ("TE_TM", "incident", float(abs(np.dot(te, tm_inc))), "e_TE dot e_TM,incident"),
+            ("TE_TM", "reflected", float(abs(np.dot(te, tm_refl))), "e_TE dot e_TM,reflected"),
+            ("TE_TM", "transmitted", float(abs(np.dot(te, tm_trans))), "e_TE dot e_TM,transmitted"),
+        ]
+
+        for pol, rect, value, label in geometry_checks:
+            qc_rows.append(
+                {
+                    "case": "geometry",
+                    "material": "geometry",
+                    "pol": pol,
+                    "rect": rect,
+                    "run_label": "",
+                    "f_hz": np.nan,
+                    "theta_deg": theta_deg,
+                    "observation_distance_lambda_scale": np.nan,
+                    "metric": "geometry_lock",
+                    "value": value,
+                    "status": "ok" if value <= tolerance else "fail",
+                    "detail": f"{label} must stay within {tolerance:.1e}.",
+                }
+            )
+
+    if locked_wide_truth is None:
+        return qc_rows
+
+    pec_rows = locked_wide_truth[locked_wide_truth["case"] == geom.pec_case].copy()
+    if pec_rows.empty:
+        qc_rows.append(
+            {
+                "case": geom.pec_case,
+                "material": geom.pec_case,
+                "pol": "both",
+                "rect": geom.refl_rect,
+                "run_label": "",
+                "f_hz": np.nan,
+                "theta_deg": np.nan,
+                "observation_distance_lambda_scale": np.nan,
+                "metric": "pec_locked_reflection_target_error",
+                "value": np.nan,
+                "status": "warn",
+                "detail": "No PEC rows were available to verify the locked reflection sign convention.",
+            }
+        )
+        return qc_rows
+
+    for _, row in pec_rows.iterrows():
+        te_error = float(abs(complex(row["R_TE"]) - geom.pec_target_reflection_te))
+        tm_error = float(abs(complex(row["R_TM"]) - geom.pec_target_reflection_tm))
+        qc_rows.extend(
+            [
+                {
+                    "case": row["case"],
+                    "material": row["material"],
+                    "pol": "TE",
+                    "rect": geom.refl_rect,
+                    "run_label": row.get("run_label", ""),
+                    "f_hz": float(row["f_hz"]),
+                    "theta_deg": float(row["theta_deg"]),
+                    "observation_distance_lambda_scale": float(row["observation_distance_lambda_scale"]),
+                    "metric": "pec_locked_reflection_target_error",
+                    "value": te_error,
+                    "status": "ok" if te_error <= 0.1 else "fail",
+                    "detail": f"Locked PEC R_TE should approach {geom.pec_target_reflection_te:+.1f}.",
+                },
+                {
+                    "case": row["case"],
+                    "material": row["material"],
+                    "pol": "TM",
+                    "rect": geom.refl_rect,
+                    "run_label": row.get("run_label", ""),
+                    "f_hz": float(row["f_hz"]),
+                    "theta_deg": float(row["theta_deg"]),
+                    "observation_distance_lambda_scale": float(row["observation_distance_lambda_scale"]),
+                    "metric": "pec_locked_reflection_target_error",
+                    "value": tm_error,
+                    "status": "ok" if tm_error <= 0.1 else "fail",
+                    "detail": f"Locked PEC R_TM should approach {geom.pec_target_reflection_tm:+.1f}.",
+                },
+            ]
+        )
+
+    return qc_rows
 
 
 def extract_arrays(sub_df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
@@ -99,11 +472,15 @@ def extract_rect_amplitudes(
     points, exported_field = extract_arrays(sub_df)
     incident_field = analytic_incident_field(points, f_hz, theta_deg, pol, geom)
     incident_norm = float(np.linalg.norm(incident_field))
-    field_type = (
-        str(sub_df["field_type"].dropna().iloc[0]).lower()
-        if "field_type" in sub_df.columns and not sub_df["field_type"].dropna().empty
-        else "scattered"
-    )
+    if "field_type" not in sub_df.columns or sub_df["field_type"].dropna().empty:
+        raise ValueError("Each normalized dataset must carry an explicit field_type.")
+    field_types = sub_df["field_type"].dropna().astype(str).str.lower().unique()
+    if len(field_types) != 1:
+        raise ValueError(
+            f"Expected exactly one field_type for case={case} pol={pol} rect={rect} "
+            f"f_hz={f_hz} theta_deg={theta_deg}, got {field_types.tolist()!r}."
+        )
+    field_type = str(field_types[0])
     observation_distance_lambda_scale = (
         float(sub_df["observation_distance_lambda_scale"].dropna().iloc[0])
         if "observation_distance_lambda_scale" in sub_df.columns
@@ -121,7 +498,7 @@ def extract_rect_amplitudes(
         else:
             raise ValueError(f"Unsupported field_type: {field_type!r}")
         observation_mode = "reflected"
-        observation_hat = reflected_hat(theta_deg)
+        observation_hat = reflected_hat(theta_deg, geom)
     elif rect == geom.trans_rect:
         if field_type == "scattered":
             observation_field = incident_field + exported_field
@@ -132,7 +509,7 @@ def extract_rect_amplitudes(
         else:
             raise ValueError(f"Unsupported field_type: {field_type!r}")
         observation_mode = "transmitted"
-        observation_hat = transmitted_hat(theta_deg)
+        observation_hat = transmitted_hat(theta_deg, geom)
     else:
         raise ValueError(f"Unexpected rect value: {rect}")
 
@@ -143,7 +520,7 @@ def extract_rect_amplitudes(
     scalar_incident = project_vector_field(incident_field, theta_deg, pol, "incident", geom)
     scalar_observation = project_vector_field(observation_field, theta_deg, pol, observation_mode, geom)
 
-    incident_estimate = matched_plane_wave_estimator(points, scalar_incident, f_hz, incident_hat(theta_deg))
+    incident_estimate = matched_plane_wave_estimator(points, scalar_incident, f_hz, incident_hat(theta_deg, geom))
     observation_estimate = matched_plane_wave_estimator(points, scalar_observation, f_hz, observation_hat)
 
     k0 = 2.0 * np.pi * float(f_hz) / 299_792_458.0
@@ -384,9 +761,9 @@ def build_raw_truth_table(
     return raw_truth, qc_report
 
 
-def apply_pec_phase_lock(raw_truth: pd.DataFrame, geom: GeometryConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
+def build_wide_truth(raw_truth: pd.DataFrame) -> pd.DataFrame:
     if raw_truth.empty:
-        return raw_truth.copy(), pd.DataFrame()
+        return raw_truth.copy()
 
     merge_columns = [
         "case",
@@ -426,6 +803,14 @@ def apply_pec_phase_lock(raw_truth: pd.DataFrame, geom: GeometryConfig) -> tuple
         if expected not in wide.columns:
             wide[expected] = np.nan + 1j * np.nan
 
+    return wide
+
+
+def apply_pec_phase_lock(wide_truth: pd.DataFrame, geom: GeometryConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
+    if wide_truth.empty:
+        return wide_truth.copy(), pd.DataFrame()
+
+    wide = wide_truth.copy()
     pec_rows = wide[wide["case"] == geom.pec_case].copy()
     phase_lock_rows: list[dict] = []
 
@@ -490,6 +875,45 @@ def apply_pec_phase_lock(raw_truth: pd.DataFrame, geom: GeometryConfig) -> tuple
         wide.at[index, "R_TM"] = row["R_TM"] * phase_lock_map[key]["TM"]
 
     return wide, pd.DataFrame(phase_lock_rows)
+
+
+def augment_locked_truth_table(locked_truth: pd.DataFrame, raw_truth: pd.DataFrame) -> pd.DataFrame:
+    if locked_truth.empty:
+        return locked_truth.copy()
+
+    augmented = locked_truth.copy()
+    id_columns = truth_table_id_columns(locked_truth)
+    raw_reflection_columns: list[str] = []
+    rename_map: dict[str, str] = {}
+
+    for prefix in ("R_TE", "R_TM"):
+        for suffix in COMPLEX_COMPONENT_SUFFIXES:
+            column = f"{prefix}_{suffix}"
+            if column not in augmented.columns or column not in raw_truth.columns:
+                continue
+            augmented[f"{prefix}_locked_{suffix}"] = augmented[column]
+            raw_reflection_columns.append(column)
+            rename_map[column] = f"{prefix}_raw_{suffix}"
+
+    if raw_reflection_columns:
+        raw_reflections = raw_truth[id_columns + raw_reflection_columns].rename(columns=rename_map)
+        augmented = augmented.merge(raw_reflections, on=id_columns, how="left")
+
+    return augmented
+
+
+def save_raw_and_locked_truth_tables(
+    raw_truth: pd.DataFrame,
+    locked_truth: pd.DataFrame,
+    output_dir: Path,
+) -> tuple[Path, Path, pd.DataFrame]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = output_dir / "truth_table_linear_raw.csv"
+    locked_path = output_dir / "truth_table_linear_locked.csv"
+    locked_augmented = augment_locked_truth_table(locked_truth, raw_truth)
+    raw_truth.to_csv(raw_path, index=False)
+    locked_augmented.to_csv(locked_path, index=False)
+    return raw_path, locked_path, locked_augmented
 
 
 def finalize_truth_table(wide_truth: pd.DataFrame, geom: GeometryConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -563,6 +987,7 @@ def finalize_truth_table(wide_truth: pd.DataFrame, geom: GeometryConfig) -> tupl
                     "material": row["material"],
                     "pol": "TE",
                     "rect": "both",
+                    "run_label": row.get("run_label", ""),
                     "f_hz": float(row["f_hz"]),
                     "theta_deg": float(row["theta_deg"]),
                     "observation_distance_lambda_scale": float(row["observation_distance_lambda_scale"]),
@@ -576,6 +1001,7 @@ def finalize_truth_table(wide_truth: pd.DataFrame, geom: GeometryConfig) -> tupl
                     "material": row["material"],
                     "pol": "TM",
                     "rect": "both",
+                    "run_label": row.get("run_label", ""),
                     "f_hz": float(row["f_hz"]),
                     "theta_deg": float(row["theta_deg"]),
                     "observation_distance_lambda_scale": float(row["observation_distance_lambda_scale"]),
@@ -633,6 +1059,11 @@ def main() -> None:
         action="store_true",
         help="Write pointwise scalar/model/residual maps into results/debug_maps.",
     )
+    parser.add_argument(
+        "--allow-final-qc-failures",
+        action="store_true",
+        help="Keep written outputs even if the post-lock geometry QC still contains fail rows.",
+    )
     args = parser.parse_args()
 
     geom = load_geometry_config(args.geometry)
@@ -641,6 +1072,7 @@ def main() -> None:
 
     args.normalized_output.parent.mkdir(parents=True, exist_ok=True)
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    qc_report_path = args.output_dir / "qc_report.csv"
     debug_dir = args.output_dir / "debug_maps"
     if args.debug_maps or geom.debug_maps:
         debug_dir.mkdir(parents=True, exist_ok=True)
@@ -649,17 +1081,30 @@ def main() -> None:
 
     measurements.to_csv(args.normalized_output, index=False)
 
-    raw_truth, qc_initial = build_raw_truth_table(measurements, geom, debug_dir)
-    wide_truth, qc_phase = apply_pec_phase_lock(raw_truth, geom)
-    truth_df, qc_final = finalize_truth_table(wide_truth, geom)
+    theta_grid = theta_grid_from_measurements(measurements)
+    qc_pre = pd.DataFrame(
+        validate_point_cloud_consistency(measurements, expected_n=geom.expected_point_count)
+        + validate_pec_field_type_lock(measurements, geom)
+        + validate_geometry_lock(theta_grid, geom)
+    )
+    if not qc_pre.empty and (qc_pre["status"] == "fail").any():
+        qc_pre.to_csv(qc_report_path, index=False)
+        raise ValueError(f"Pre-estimation QC failed. See {qc_report_path}")
 
-    qc_frames = [frame for frame in [qc_initial, qc_phase, qc_final] if not frame.empty]
+    raw_truth, qc_initial = build_raw_truth_table(measurements, geom, debug_dir)
+    wide_truth_raw = build_wide_truth(raw_truth)
+    wide_truth_locked, qc_phase = apply_pec_phase_lock(wide_truth_raw, geom)
+    raw_truth_df, _ = finalize_truth_table(wide_truth_raw, geom)
+    locked_truth_base, qc_final = finalize_truth_table(wide_truth_locked, geom)
+    qc_geometry_locked = pd.DataFrame(validate_geometry_lock(theta_grid, geom, wide_truth_locked))
+
+    qc_frames = [frame for frame in [qc_pre, qc_initial, qc_phase, qc_final, qc_geometry_locked] if not frame.empty]
     qc_report = pd.concat(qc_frames, ignore_index=True) if qc_frames else pd.DataFrame()
 
     extra_qc = pd.DataFrame(
-        build_pec_rows(wide_truth, geom.pec_case)
+        build_pec_rows(wide_truth_locked, geom.pec_case)
         + build_smoothness_rows(
-            wide_truth,
+            wide_truth_locked,
             quantity_columns=["R_TE", "R_TM", "T_TE", "T_TM"],
             jump_db_threshold=geom.smoothness_jump_db,
         )
@@ -667,9 +1112,11 @@ def main() -> None:
     if not extra_qc.empty:
         qc_report = pd.concat([qc_report, extra_qc], ignore_index=True) if not qc_report.empty else extra_qc
 
-    linear_truth_path = args.output_dir / "truth_table_linear.csv"
-    qc_report_path = args.output_dir / "qc_report.csv"
-    truth_df.to_csv(linear_truth_path, index=False)
+    raw_truth_path, locked_truth_path, locked_truth_df = save_raw_and_locked_truth_tables(
+        raw_truth_df,
+        locked_truth_base,
+        args.output_dir,
+    )
     qc_report.to_csv(qc_report_path, index=False)
 
     print("=" * 72)
@@ -677,17 +1124,25 @@ def main() -> None:
     print("=" * 72)
     print(f"Manifest rows:         {len(manifest)}")
     print(f"Normalized samples:    {len(measurements)}")
-    print(f"Linear truth rows:     {len(truth_df)}")
+    print(f"Raw truth rows:        {len(raw_truth_df)}")
+    print(f"Locked truth rows:     {len(locked_truth_df)}")
     print(f"QC report rows:        {len(qc_report)}")
     print(f"Normalized dump:       {args.normalized_output}")
-    print(f"Linear truth table:    {linear_truth_path}")
+    print(f"Raw truth table:       {raw_truth_path}")
+    print(f"Locked truth table:    {locked_truth_path}")
     print(f"QC report:             {qc_report_path}")
 
     if args.with_cp_transform:
-        cp_truth = build_cp_truth_table(truth_df)
+        cp_truth = build_cp_truth_table(locked_truth_df)
         cp_truth_path = args.output_dir / "truth_table_cp.csv"
         cp_truth.to_csv(cp_truth_path, index=False)
         print(f"CP truth table:        {cp_truth_path}")
+
+    if not qc_geometry_locked.empty and (qc_geometry_locked["status"] == "fail").any():
+        if args.allow_final_qc_failures:
+            print(f"Final geometry lock QC contains fail rows. See {qc_report_path}")
+        else:
+            raise ValueError(f"Geometry lock QC failed after PEC locking. See {qc_report_path}")
 
 
 if __name__ == "__main__":

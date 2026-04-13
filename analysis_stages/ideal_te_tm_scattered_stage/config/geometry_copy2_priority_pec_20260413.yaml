@@ -1,4 +1,3 @@
-# Flat YAML subset parsed by geometry.py
 source_origin_m: [0.0, 0.0, 0.0]
 source_origin_offset_along_incident_m: -0.1
 observation_distance_lambda_scale: 0.5
@@ -16,4 +15,5 @@ baseline_warn_threshold: 0.1
 fit_warn_threshold: 0.05
 smoothness_jump_db: 3.0
 passivity_tolerance: 0.05
+expected_point_count: 1681
 debug_maps: false

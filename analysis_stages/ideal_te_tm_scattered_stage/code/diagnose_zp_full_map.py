@@ -136,12 +136,12 @@ def compute_group_maps(sub_df: pd.DataFrame, geom: GeometryConfig) -> dict:
     scalar_total = project_vector_field(total_field, theta_deg, pol, "transmitted", geom)
     scalar_residual = project_vector_field(residual_field, theta_deg, pol, "transmitted", geom)
 
-    incident_est = matched_plane_wave_estimator(points, scalar_incident, f_hz, incident_hat(theta_deg))
-    total_est = matched_plane_wave_estimator(points, scalar_total, f_hz, transmitted_hat(theta_deg))
-    residual_est = matched_plane_wave_estimator(points, scalar_residual, f_hz, transmitted_hat(theta_deg))
+    incident_est = matched_plane_wave_estimator(points, scalar_incident, f_hz, incident_hat(theta_deg, geom))
+    total_est = matched_plane_wave_estimator(points, scalar_total, f_hz, transmitted_hat(theta_deg, geom))
+    residual_est = matched_plane_wave_estimator(points, scalar_residual, f_hz, transmitted_hat(theta_deg, geom))
 
     k0 = 2.0 * np.pi * f_hz / 299_792_458.0
-    fit_phase = (points - total_est.center_xyz) @ transmitted_hat(theta_deg)
+    fit_phase = (points - total_est.center_xyz) @ transmitted_hat(theta_deg, geom)
     scalar_fit = total_est.amplitude * np.exp(-1j * k0 * fit_phase)
     scalar_fit_residual = scalar_total - scalar_fit
 
