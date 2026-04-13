@@ -1059,6 +1059,11 @@ def main() -> None:
         action="store_true",
         help="Write pointwise scalar/model/residual maps into results/debug_maps.",
     )
+    parser.add_argument(
+        "--allow-final-qc-failures",
+        action="store_true",
+        help="Keep written outputs even if the post-lock geometry QC still contains fail rows.",
+    )
     args = parser.parse_args()
 
     geom = load_geometry_config(args.geometry)
@@ -1078,7 +1083,7 @@ def main() -> None:
 
     theta_grid = theta_grid_from_measurements(measurements)
     qc_pre = pd.DataFrame(
-        validate_point_cloud_consistency(measurements)
+        validate_point_cloud_consistency(measurements, expected_n=geom.expected_point_count)
         + validate_pec_field_type_lock(measurements, geom)
         + validate_geometry_lock(theta_grid, geom)
     )
@@ -1134,7 +1139,10 @@ def main() -> None:
         print(f"CP truth table:        {cp_truth_path}")
 
     if not qc_geometry_locked.empty and (qc_geometry_locked["status"] == "fail").any():
-        raise ValueError(f"Geometry lock QC failed after PEC locking. See {qc_report_path}")
+        if args.allow_final_qc_failures:
+            print(f"Final geometry lock QC contains fail rows. See {qc_report_path}")
+        else:
+            raise ValueError(f"Geometry lock QC failed after PEC locking. See {qc_report_path}")
 
 
 if __name__ == "__main__":

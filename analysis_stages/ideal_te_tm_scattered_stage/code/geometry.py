@@ -28,6 +28,7 @@ class GeometryConfig:
     fit_warn_threshold: float = 5e-2
     smoothness_jump_db: float = 3.0
     passivity_tolerance: float = 5e-2
+    expected_point_count: int = 401
     debug_maps: bool = False
 
 
@@ -117,6 +118,7 @@ def load_geometry_config(path: Path) -> GeometryConfig:
         fit_warn_threshold=float(data.get("fit_warn_threshold", 5e-2)),
         smoothness_jump_db=float(data.get("smoothness_jump_db", 3.0)),
         passivity_tolerance=float(data.get("passivity_tolerance", 5e-2)),
+        expected_point_count=int(data.get("expected_point_count", 401)),
         debug_maps=bool(data.get("debug_maps", False)),
     )
 

@@ -1,0 +1,19 @@
+source_origin_m: [0.0, 0.0, 0.0]
+source_origin_offset_along_incident_m: -0.1
+observation_distance_lambda_scale: 0.5
+surface_normal_m: [0.0, 0.0, 1.0]
+reference_te_axis_m: [0.0, 1.0, 0.0]
+plane_of_incidence_axis_m: [1.0, 0.0, 0.0]
+baseline_case: baseline
+pec_case: pec
+refl_rect: refl_rect
+trans_rect: trans_rect
+pec_target_reflection_te: -1.0
+pec_target_reflection_tm: 1.0
+baseline_good_threshold: 0.01
+baseline_warn_threshold: 0.1
+fit_warn_threshold: 0.05
+smoothness_jump_db: 3.0
+passivity_tolerance: 0.05
+expected_point_count: 1681
+debug_maps: false
