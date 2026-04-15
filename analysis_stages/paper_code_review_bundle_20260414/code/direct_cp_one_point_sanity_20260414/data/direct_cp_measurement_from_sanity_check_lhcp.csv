@@ -1,0 +1,3 @@
+material,theta_deg,freq_ghz,tx_cp,rx_cp,coeff_real,coeff_imag,coeff_mag,coeff_phase_deg,note
+concrete,30.0,6.5,LHCP,LHCP,,,0.00425994133679833,48.2533667039027,Converted from sanity check.csv S(RX_LH_p1,TX_LH_p1)
+concrete,30.0,6.5,LHCP,RHCP,,,0.000843049731500395,47.7821819672937,Converted from sanity check.csv S(RX_RH_p1,TX_LH_p1)

@@ -1,0 +1,8 @@
+material,angle_bucket,n_rows
+concrete,30-39,1
+concrete,40+,4
+glass,30-39,1
+glass,40+,5
+wood,20-29,1
+wood,30-39,2
+wood,40+,2

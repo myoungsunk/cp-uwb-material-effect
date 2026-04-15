@@ -1,0 +1,2 @@
+theta_min_deg,theta_max_deg,slope_rad_per_cos,intercept_rad,effective_path_offset_m,effective_path_offset_mm,r2
+20.0,55.0,-0.3006858677629447,0.49697500440407755,-0.0011036247325592401,-1.10362473255924,0.7449014639068914

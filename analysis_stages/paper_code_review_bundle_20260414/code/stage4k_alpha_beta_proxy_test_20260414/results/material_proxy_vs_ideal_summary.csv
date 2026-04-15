@@ -1,0 +1,13 @@
+proxy_name,material,negative_gap_rows,mean_vs_ideal_db,worst_vs_ideal_db
+gamma_c_raw_mag,concrete,0,10.451994669305384,2.8329555886397917
+gamma_c_raw_mag,glass,0,9.423185209517106,0.9212920322186271
+gamma_c_raw_mag,wood,0,8.653088960219527,0.9510453948031404
+gamma_c_eff_lr_rr_mag,concrete,5,2.970880215799956,-8.511228618752952
+gamma_c_eff_lr_rr_mag,glass,1,8.7681595160127,-2.3145428070067933
+gamma_c_eff_lr_rr_mag,wood,2,6.453284644013594,-6.927326051818338
+gamma_c_eff_rl_ll_mag,concrete,0,12.436387746765837,4.071595329624583
+gamma_c_eff_rl_ll_mag,glass,0,11.1552532240464,1.3211160076612574
+gamma_c_eff_rl_ll_mag,wood,0,10.415543721249545,1.616476726494055
+gamma_c_eff_alpha_beta_no_phase_mag,concrete,6,2.743252344664652,-4.365816729326861
+gamma_c_eff_alpha_beta_no_phase_mag,glass,1,7.3506621088537765,-1.008474794887029
+gamma_c_eff_alpha_beta_no_phase_mag,wood,2,5.3941109766510325,-3.4698311547684266

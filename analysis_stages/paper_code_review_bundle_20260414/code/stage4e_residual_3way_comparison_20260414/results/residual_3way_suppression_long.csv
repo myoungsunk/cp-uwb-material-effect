@@ -1,0 +1,93 @@
+material,theta_deg,series_id,series_label,method_family,normalization_scope,directly_comparable_to_ideal,G_supp_db,delta_vs_ideal_db,delta_negative
+concrete,20.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,22.92442736668508,0.0,False
+concrete,20.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,10.763630429029092,12.160796937655988,False
+concrete,20.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,14.508635745856552,8.415791620828527,False
+concrete,20.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-0.7026704269692512,23.62709779365433,False
+concrete,25.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,21.83595872100936,0.0,False
+concrete,25.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,9.52482950966824,12.311129211341118,False
+concrete,25.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,16.389192633250257,5.4467660877591015,False
+concrete,25.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-1.0750989817318135,22.91105770274117,False
+concrete,30.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,21.43814884554638,0.0,False
+concrete,30.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,8.191708943850509,13.24643990169587,False
+concrete,30.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,19.8643222914696,1.5738265540767813,False
+concrete,30.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-1.833436921551384,23.271585767097765,False
+concrete,35.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,16.413710687263993,0.0,False
+concrete,35.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,9.104818985958389,7.3088917013056065,False
+concrete,35.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,24.60474304497122,-8.191032357707225,True
+concrete,35.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-1.9034438495787889,18.317154536842786,False
+concrete,40.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,14.584495698199111,0.0,False
+concrete,40.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,7.801086109890001,6.783409588309111,False
+concrete,40.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,23.095724316952072,-8.511228618752959,True
+concrete,40.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-3.197458226342679,17.781953924541792,False
+concrete,45.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,11.694408015245497,0.0,False
+concrete,45.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,8.333156100635572,3.361251914609925,False
+concrete,45.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,19.754804505249066,-8.060396490003571,True
+concrete,45.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-3.261460212761908,14.955868228007404,False
+concrete,50.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,10.365422876345054,0.0,False
+concrete,50.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,7.532467287705266,2.832955588639788,False
+concrete,50.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,16.464898739504072,-6.099475863159018,True
+concrete,50.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-4.866794274727165,15.23221715107222,False
+concrete,55.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,9.80117018789593,0.0,False
+concrete,55.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,6.703456563745124,3.097713624150807,False
+concrete,55.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,13.034518838321386,-3.233348650425455,True
+concrete,55.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-6.498163887220715,16.299334075116647,False
+glass,20.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,22.814060799852555,0.0,False
+glass,20.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,11.23168484551135,11.582375954341206,False
+glass,20.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,14.720675573366211,8.093385226486342,False
+glass,20.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-0.2391323794956631,23.05319317934822,False
+glass,25.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,21.020698118471373,0.0,False
+glass,25.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,10.560284416799895,10.460413701671476,False
+glass,25.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,16.439886728898475,4.580811389572897,False
+glass,25.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,0.0566841538365271,20.964013964634844,False
+glass,30.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,23.549124043075263,0.0,False
+glass,30.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,9.66774183397104,13.881382209104224,False
+glass,30.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,19.838734534118466,3.710389508956801,False
+glass,30.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-0.353440310319425,23.902564353394688,False
+glass,35.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,18.09129498501625,0.0,False
+glass,35.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,10.627978479946483,7.463316505069768,False
+glass,35.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,25.376519113780382,-7.285224128764135,True
+glass,35.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-0.4105525588043637,18.501847543820617,False
+glass,40.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,17.169732230508874,0.0,False
+glass,40.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,9.258232542376415,7.911499688132459,False
+glass,40.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,25.45309849417218,-8.283366263663307,True
+glass,40.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-1.7282655868121406,18.897997817321013,False
+glass,45.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,13.741349619346332,0.0,False
+glass,45.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,9.680305909476644,4.061043709869688,False
+glass,45.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,22.77016600752267,-9.028816388176336,True
+glass,45.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-1.893339564610773,15.634689183957104,False
+glass,50.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,12.275849746575725,0.0,False
+glass,50.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,8.992342042928366,3.283507703647359,False
+glass,50.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,19.46114617142437,-7.185296424848653,True
+glass,50.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-3.4378304285257784,15.713680175101503,False
+glass,55.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,9.940130331926476,0.0,False
+glass,55.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,8.469017043661845,1.4711132882646307,False
+glass,55.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,15.772569975172894,-5.832439643246417,True
+glass,55.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-4.693063434415939,14.633193766342416,False
+glass,60.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,8.169057818403964,0.0,False
+glass,60.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,7.247765786185337,0.9212920322186272,False
+glass,60.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,12.54023903541767,-4.3711812170137065,True
+glass,60.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-7.138106056736043,15.307163875140006,False
+wood,20.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,18.90099901383128,0.0,False
+wood,20.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,9.04281852300577,9.85818049082551,False
+wood,20.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,14.54705901794522,4.3539399958860585,False
+wood,20.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-2.409958774978914,21.310957788810192,False
+wood,25.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,17.643241866696037,0.0,False
+wood,25.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,8.452703080628638,9.1905387860674,False
+wood,25.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,19.34921862061492,-1.7059767539188757,True
+wood,25.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-2.0458696027353485,19.689111469431385,False
+wood,30.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,16.1327452355753,0.0,False
+wood,30.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,7.518171939296571,8.614573296278728,False
+wood,30.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,23.638608189202245,-7.505862953626945,True
+wood,30.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-2.5064281574227945,18.639173392998096,False
+wood,35.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,12.73284794413415,0.0,False
+wood,35.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,8.699906215031245,4.032941729102905,False
+wood,35.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,22.520577685333272,-9.787729741199122,True
+wood,35.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-2.325522493502951,15.058370437637102,False
+wood,40.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,10.593483020655048,0.0,False
+wood,40.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,7.0123240223936,3.581158998261448,False
+wood,40.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,17.15577951077939,-6.562296490124343,True
+wood,40.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-4.005103383451429,14.598586404106475,False
+wood,45.0,ideal,Ideal upper bound,ideal,absolute_interface_truth,True,8.282989496940548,0.0,False
+wood,45.0,patch_raw,Patch raw,patch_raw,patch_stage_absolute_like,True,7.331944102137408,0.95104539480314,False
+wood,45.0,patch_eff,Patch corrected,patch_eff,patch_stage_absolute_like,True,14.557885871446178,-6.27489637450563,True
+wood,45.0,patch_metal_floor,Patch metal-floor,patch_metal_floor,metal_normalized_diagnostic,False,-4.228502270812561,12.511491767753109,False

@@ -1,0 +1,4 @@
+material,reporting_theta_min_deg,reporting_theta_max_deg,n_rows,peak_G_supp_ideal_db,peak_G_supp_ideal_theta_deg,peak_G_supp_patch_db,peak_G_supp_patch_theta_deg,peak_Delta_G_db,peak_Delta_G_theta_deg,worst_lp_leakage_max_db,ideal_residual_branch_name,patch_residual_branch_name,branch_lock_method
+concrete,20.0,55.0,8,22.92442736668508,20.0,24.60474304497122,35.0,8.415791620828527,20.0,-19.93271435657605,Gamma_X,gamma_hat_c_cp_eff,lp_anchor_branch_lock_20260414
+glass,20.0,60.0,9,23.549124043075263,30.0,25.45309849417218,40.0,8.093385226486342,20.0,-18.445179233587677,Gamma_X,gamma_hat_c_cp_eff,lp_anchor_branch_lock_20260414
+wood,20.0,45.0,6,18.900999013831278,20.0,23.638608189202245,30.0,4.3539399958860585,20.0,-27.75132459188214,Gamma_X,gamma_hat_c_cp_eff,lp_anchor_branch_lock_20260414
