@@ -1,0 +1,4 @@
+requested_freq_ghz,actual_freq_ghz,selector_label,ideal_match_available_in_bundle,selection_note
+5.0,6.24,lower_band_edge,True,Matched to same-frequency Stage 1/2 ideal truth.
+6.5,6.5,center_near_6p5,True,Matched to same-frequency Stage 1/2 ideal truth.
+8.0,6.74,upper_band_edge,True,Matched to same-frequency Stage 1/2 ideal truth.

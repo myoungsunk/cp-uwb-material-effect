@@ -1,0 +1,11 @@
+model_name,scope,n_rows,violation_rows,pass_lt_5_rows,center_fit_rmse_abs,center_fit_mean_abs_diff
+a1_ideal_center_const_reference,6p5,23,2,True,,
+a1_ideal_center_const_reference,band,23,3,True,,
+material_affine_centerfit,6p5,23,9,False,0.141028401290397,0.09499779096391672
+material_affine_centerfit,band,23,5,False,0.141028401290397,0.09499779096391672
+material_offset_centerfit,6p5,23,7,False,0.15108108119008543,0.10465756518839373
+material_offset_centerfit,band,23,6,False,0.15108108119008543,0.10465756518839373
+material_scale_centerfit,6p5,23,8,False,0.14635660003610487,0.10339995324298347
+material_scale_centerfit,band,23,4,True,0.14635660003610487,0.10339995324298347
+shared_current,6p5,23,15,False,0.31677991463914296,0.2794007613691325
+shared_current,band,23,8,False,0.31677991463914296,0.2794007613691325

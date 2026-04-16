@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -50,9 +51,10 @@ def build_argparser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--stage4f-full",
         type=Path,
-        default=Path(__file__).resolve().parent
+        default=bundle_root
+        / "data"
+        / "stage_4"
         / "stage4f_raw_primary_dual_20260414"
-        / "results"
         / "stage4f_raw_primary_full.csv",
     )
     parser.add_argument(
@@ -123,6 +125,7 @@ def main() -> None:
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     repo_root = Path(__file__).resolve().parents[3]
+    execution_date = date.today().isoformat()
 
     patch_cp = pd.read_csv(args.patch_cp_freq)
     patch_lp = pd.read_csv(args.patch_lp_freq)
@@ -179,6 +182,12 @@ def main() -> None:
     freq_df["phase_near_zero"] = freq_df["delta_phi_deg"].abs() <= PHASE_ALIGN_MAX_DEG
     freq_df["predicted_overcorrection_point"] = freq_df["rho_ge_1"] & freq_df["phase_near_zero"]
     freq_df["eps_obs_lp_vs_current_abs_diff"] = np.abs(eps_obs_lp - eps_eff_current)
+    freq_df["eps_obs_lp_vs_current_mag_bias_db"] = 20.0 * np.log10(
+        np.maximum(np.abs(eps_obs_lp), 1e-12) / np.maximum(np.abs(eps_eff_current), 1e-12)
+    )
+    freq_df["eps_obs_lp_vs_current_phase_diff_deg"] = wrap_phase_deg(
+        np.rad2deg(np.angle(eps_obs_lp) - np.angle(eps_eff_current))
+    )
 
     stage4f = stage4f[stage4f["material"].isin(MATERIALS)][
         ["material", "theta_deg", "Delta_ideal_minus_eff_db", "delta_eff_negative"]
@@ -326,6 +335,10 @@ def main() -> None:
                 "predicted_overcorrection_freq_frac": float(freq_sub["predicted_overcorrection_point"].mean()),
                 "mean_eps_obs_lp_vs_current_abs_diff": float(freq_sub["eps_obs_lp_vs_current_abs_diff"].mean()),
                 "p90_eps_obs_lp_vs_current_abs_diff": float(np.percentile(freq_sub["eps_obs_lp_vs_current_abs_diff"], 90)),
+                "mean_eps_obs_lp_vs_current_mag_bias_db": float(freq_sub["eps_obs_lp_vs_current_mag_bias_db"].mean()),
+                "median_abs_eps_obs_lp_vs_current_phase_diff_deg": float(
+                    np.median(np.abs(freq_sub["eps_obs_lp_vs_current_phase_diff_deg"]))
+                ),
             }
         )
     summary_df = pd.DataFrame(material_summary_rows)
@@ -364,6 +377,12 @@ def main() -> None:
     eps_obs_ideal = safe_complex_ratio(complex_from_cols(ideal_center, "gamma_hat_c_cp_raw") - gamma_target_ideal, complex_from_cols(ideal_center, "gamma_hat_x_cp_sys"))
     add_complex_columns(ideal_center, "eps_obs_ideal", eps_obs_ideal)
     ideal_center["eps_obs_ideal_vs_current_abs_diff"] = np.abs(eps_obs_ideal - ideal_center["_eps_eff_current"].to_numpy(dtype=complex))
+    ideal_center["eps_obs_ideal_vs_current_mag_bias_db"] = 20.0 * np.log10(
+        np.maximum(np.abs(eps_obs_ideal), 1e-12) / np.maximum(np.abs(ideal_center["_eps_eff_current"].to_numpy(dtype=complex)), 1e-12)
+    )
+    ideal_center["eps_obs_ideal_vs_current_phase_diff_deg"] = wrap_phase_deg(
+        np.rad2deg(np.angle(eps_obs_ideal) - np.angle(ideal_center["_eps_eff_current"].to_numpy(dtype=complex)))
+    )
     ideal_center_export = ideal_center[
         [
             "material",
@@ -388,6 +407,8 @@ def main() -> None:
             "eps_obs_ideal_mag",
             "eps_obs_ideal_phase_deg",
             "eps_obs_ideal_vs_current_abs_diff",
+            "eps_obs_ideal_vs_current_mag_bias_db",
+            "eps_obs_ideal_vs_current_phase_diff_deg",
         ]
     ].copy()
 
@@ -403,6 +424,14 @@ def main() -> None:
                 "mean_eps_obs_ideal_mag": float(sub["eps_obs_ideal_mag"].mean()),
                 "mean_eps_obs_ideal_vs_current_abs_diff": float(sub["eps_obs_ideal_vs_current_abs_diff"].mean()),
                 "max_eps_obs_ideal_vs_current_abs_diff": float(sub["eps_obs_ideal_vs_current_abs_diff"].max()),
+                "mean_eps_obs_ideal_vs_current_mag_bias_db": float(sub["eps_obs_ideal_vs_current_mag_bias_db"].mean()),
+                "median_eps_obs_ideal_vs_current_mag_bias_db": float(sub["eps_obs_ideal_vs_current_mag_bias_db"].median()),
+                "mean_abs_eps_obs_ideal_vs_current_phase_diff_deg": float(
+                    np.mean(np.abs(sub["eps_obs_ideal_vs_current_phase_diff_deg"]))
+                ),
+                "median_abs_eps_obs_ideal_vs_current_phase_diff_deg": float(
+                    np.median(np.abs(sub["eps_obs_ideal_vs_current_phase_diff_deg"]))
+                ),
             }
         )
     ideal_summary_df = pd.DataFrame(ideal_summary_rows)
@@ -435,7 +464,7 @@ def main() -> None:
     md_lines = [
         "# Stage 4g Eff Mechanism Audit",
         "",
-        "Execution date: `2026-04-14`",
+        f"Execution date: `{execution_date}`",
         "",
         "This stage was executed in the isolated workspace:",
         "",
@@ -468,7 +497,9 @@ def main() -> None:
             f"(monotonic decrease={row['eps_eff_db_monotonic_decrease']}), "
             f"negative eff rows={int(row['negative_eff_rows'])}, "
             f"band-majority overcorrection rows={int(row['overcorrection_majority_rows'])}, "
-            f"mean |eps_obs_lp - eps_eff|={row['mean_eps_obs_lp_vs_current_abs_diff']:.4f}"
+            f"mean |eps_obs_lp - eps_eff|={row['mean_eps_obs_lp_vs_current_abs_diff']:.4f}, "
+            f"mean mag bias={row['mean_eps_obs_lp_vs_current_mag_bias_db']:.2f} dB, "
+            f"median |phase drift|={row['median_abs_eps_obs_lp_vs_current_phase_diff_deg']:.2f} deg"
         )
 
     md_lines.extend(
@@ -491,6 +522,15 @@ def main() -> None:
         md_lines.append(
             f"- center-frequency `eps_obs_ideal` mean |difference vs current eps_eff|: "
             f"`{ideal_row['mean_eps_obs_ideal_vs_current_abs_diff']:.4f}`"
+        )
+        md_lines.append(
+            f"- center-frequency `eps_obs_ideal` mean mag bias vs current `eps_eff`: "
+            f"`{ideal_row['mean_eps_obs_ideal_vs_current_mag_bias_db']:.2f} dB` "
+            f"(median `{ideal_row['median_eps_obs_ideal_vs_current_mag_bias_db']:.2f} dB`)"
+        )
+        md_lines.append(
+            f"- center-frequency `eps_obs_ideal` median |phase drift| vs current `eps_eff`: "
+            f"`{ideal_row['median_abs_eps_obs_ideal_vs_current_phase_diff_deg']:.2f} deg`"
         )
     else:
         md_lines.append("- center-frequency ideal diagnostic could not be joined to the patch freq grid.")

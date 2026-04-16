@@ -1,0 +1,39 @@
+﻿stage,bundle_file,role,source
+1,code/stage_1_build_truth_table.py,Ideal TE/TM truth table builder from scattered-field exports.,analysis_stages/ideal_te_tm_scattered_stage/code/build_truth_table.py
+1,code/stage_1_te_tm_extraction_ideal_plane_wave.py,Stage 1 wrapper entrypoint that calls the ideal truth-table builder.,analysis_stages/ideal_te_tm_scattered_stage/code/te_tm_extraction_ideal_plane_wave.py
+1,code/stage_1_projection.py,Project vector fields into local TE/TM bases before coefficient estimation.,analysis_stages/ideal_te_tm_scattered_stage/code/projection.py
+1,code/stage_1_estimator.py,Matched plane-wave estimator used by the ideal truth-table builder.,analysis_stages/ideal_te_tm_scattered_stage/code/estimator.py
+1,code/stage_1_geometry.py,"Geometry helpers for wall normal, incidence, basis vectors, and observation planes.",analysis_stages/ideal_te_tm_scattered_stage/code/geometry.py
+1,code/stage_1_incident_field.py,Analytic incident-field model used by Stage 1 truth reconstruction.,analysis_stages/ideal_te_tm_scattered_stage/code/incident_field.py
+1,code/stage_1_io_adapter.py,CSV/manifest loader for the ideal HFSS export set.,analysis_stages/ideal_te_tm_scattered_stage/code/io_adapter.py
+1,code/stage_1_qc.py,"Quality-control helpers for passivity, smoothness, PEC checks, and baseline checks.",analysis_stages/ideal_te_tm_scattered_stage/code/qc.py
+1,code/stage_1_sanity_check_fresnel.py,Fresnel sanity-check script for the locked ideal truth table.,analysis_stages/ideal_te_tm_scattered_stage/code/sanity_check_fresnel.py
+1,code/stage_1_build_phase_lock_audit.py,Audit the active phase-zero manifest and quantify TE/TM differential phase injection introduced by the current PEC lock.,bundle-only audit script created for the 2026-04-14 Stage 1 lock review
+2,code/stage_2_cp_transform.py,Linear-to-CP basis transform from ideal TE/TM truth into Gamma_X and Gamma_C.,analysis_stages/ideal_te_tm_scattered_stage/code/cp_transform.py
+3,code/stage_3_cp_patch_extraction.py,CP patch-stage extraction with reciprocity geometric mean and leakage correction.,analysis_stages/stage3_patch_paper_final_20260414/cp/code/gamma_extraction_v2.py
+3,code/stage_3_export_cp_patch_stage3.py,Export band-averaged CP patch-stage tables used by later suppression analyses.,analysis_stages/stage3_patch_paper_final_20260414/cp/code/export_patch_cp_stage3.py
+3,code/stage_3_lp_patch_extraction.py,LP patch-stage extraction used as the LP-direct anchor and cross-check path.,analysis_stages/stage3_patch_paper_final_20260414/lp/code/gamma_extraction_lp.py
+3,code/stage_3_export_lp_patch_stage3.py,Export LP patch-stage tables aligned to the paper-final grid.,analysis_stages/stage3_patch_paper_final_20260414/lp/code/export_patch_lp_stage3.py
+3,code/stage_3_verify_lp_anchor_branch_lock.py,Lock CP branch naming using LP-anchor evidence and export aliased CP columns.,analysis_stages/lp_anchor_branch_lock_20260414/code/verify_lp_anchor_branch_lock.py
+3,code/stage_3_build_metal_leakage_proxy_audit.py,Build the metal leakage proxy audit comparing actual PEC leakage against the LoS proxy h3_LR/h3_RR.,analysis_stages/stage3_metal_leakage_proxy_audit_20260414/code/build_metal_leakage_proxy_audit.py
+4,code/stage_4_build_suppression_gain_dual.py,Initial dual-metric suppression-gain builder before convention lock.,analysis_stages/stage4_suppression_dual_20260414/code/build_suppression_gain_dual.py
+4,code/stage_4_build_suppression_gain_convention_locked.py,Convention-locked suppression-gain builder after branch naming was fixed.,analysis_stages/stage4b_convention_locked_20260414/code/build_suppression_gain_convention_locked.py
+4,code/stage_4_audit_same_angle_gap.py,Same-angle gap audit used to test whether ideal remains an upper bound per angle.,analysis_stages/stage4c_same_angle_gap_audit_20260414/code/audit_same_angle_gap.py
+4,code/stage_4_build_cp_metal_floor_audit.py,Metal-floor audit for CP residual normalization using PEC/metal reference rows.,analysis_stages/stage4d_cp_metal_floor_audit_20260414/code/build_cp_metal_floor_audit.py
+4,code/stage_4_build_residual_3way_comparison.py,"Three-way residual comparison among raw, eff, and metal-floor CP residual definitions.",analysis_stages/stage4e_residual_3way_comparison_20260414/code/build_residual_3way_comparison.py
+4,code/stage_4_build_raw_primary_dual_reporting.py,Raw-primary dual-reporting summary used to define the conservative headline metric.,analysis_stages/stage4f_raw_primary_dual_20260414/code/build_raw_primary_dual_reporting.py
+4,code/stage_4_export_anglewise_comparison.py,Export anglewise comparison tables for raw-primary Stage 4 reporting.,analysis_stages/stage4f_raw_primary_dual_20260414/code/export_anglewise_comparison.py
+4,code/stage_4_audit_eff_mechanism.py,Audit the eff correction mechanism and decompose why over-correction occurs.,analysis_stages/stage4g_eff_mechanism_audit_20260414/code/audit_eff_mechanism.py
+4,code/stage_4_build_pec_based_cp_comparison.py,Compare PEC-based CP correction against ideal and raw residual definitions.,analysis_stages/stage4h_pec_based_cp_correction_20260414/code/build_pec_based_cp_comparison.py
+4,code/stage_4_build_eff_mismatch_signature.py,Build the Stage 4j mismatch-signature audit for phase drift and residual-to-correction scaling.,analysis_stages/stage4j_eff_mismatch_signature_20260414/code/build_eff_mismatch_signature.py
+4,code/stage_4_build_alpha_beta_proxy_test.py,Build the Stage 4k alpha-beta proxy comparison including no-phase and phase-fit kernels.,analysis_stages/stage4k_alpha_beta_proxy_test_20260414/code/build_alpha_beta_proxy_test.py
+4,code/stage_4_build_brewster_deff_checks.py,Build the Stage 4l checks for Brewster-vicinity sensitivity and d_eff frequency stability.,analysis_stages/stage4l_brewster_deff_checks_20260414/code/build_brewster_deff_checks.py
+4,code/stage_4_build_direct_cp_one_point_from_references.py,Single-point direct CP sanity builder from reference data and ideal prediction.,analysis_stages/direct_cp_one_point_sanity_20260414/code/build_direct_cp_one_point_from_references.py
+4,code/stage_4_compare_direct_cp_one_point.py,Comparator script for the direct CP one-point sanity check outputs.,analysis_stages/direct_cp_one_point_sanity_20260414/code/compare_direct_cp_one_point.py
+4,code/stage_4_compare_sanity_sweep_with_stage3_cp.py,Compare sanity-check sweep exports against Stage 3 CP outputs.,analysis_stages/sanity_check_sweep_vs_stage3_20260414/code/compare_sanity_sweep_with_stage3_cp.py
+4,code/stage_4_build_sanity_sweep_alignment_note.py,Write the sweep-versus-Stage-3 alignment note used during sanity-check debugging.,analysis_stages/sanity_check_sweep_vs_stage3_20260414/code/build_sanity_sweep_alignment_note.py
+4,code/stage_4_build_specular_rx_direct_cp_reanalysis.py,"Direct specular-RX CP reanalysis using ideal, raw, and calibrated branches.",analysis_stages/specular_rx_direct_cp_reanalysis_20260414/code/build_specular_rx_direct_cp_reanalysis.py
+4,code/stage_4_build_specular_rx_tx_direct_cp_reanalysis.py,"Direct specular-RX_TX CP reanalysis using ideal, raw, and PEC-calibrated branches.",analysis_stages/specular_rx_tx_direct_cp_reanalysis_20260414/code/build_specular_rx_tx_direct_cp_reanalysis.py
+4,code/stage_4_build_original_cp_phase_anchor_validation.py,Validate phase-anchor impact on the original non-specular CP patch-stage dataset.,analysis_stages/original_cp_phase_anchor_validation_20260414/code/build_original_cp_phase_anchor_validation.py
+6,code/stage_6_build_uwb_dispersion_sensitivity.py,UWB dispersion-sensitivity study for the ideal suppression metric.,analysis_stages/stage6_uwb_dispersion_sensitivity_20260414/code/build_uwb_dispersion_sensitivity.py
+7,code/stage_7_build_paper_figures_1_4.py,Final paper Figure 1 to Figure 4 plotting and CSV export script.,analysis_stages/stage7_figure_table_mapping_20260414/code/build_paper_figures_1_4.py

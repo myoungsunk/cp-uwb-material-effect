@@ -63,6 +63,21 @@ def parse_complex(mag, phase_deg):
     return mag * np.exp(1j * np.deg2rad(phase_deg))
 
 
+def anchored_geometric_mean(ratio, anchor_approx):
+    """Resolve the sqrt-branch sign using a single-branch phase anchor."""
+    candidate = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+    candidate_arr = np.atleast_1d(np.asarray(candidate, dtype=complex)).copy()
+    anchor_arr = np.atleast_1d(np.asarray(anchor_approx, dtype=complex))
+    valid = np.abs(anchor_arr) > 1e-18
+    phase_delta = np.zeros(candidate_arr.shape, dtype=float)
+    phase_delta[valid] = np.angle(candidate_arr[valid] / anchor_arr[valid])
+    flip = valid & (np.abs(phase_delta) > (np.pi / 2))
+    candidate_arr[flip] *= -1.0
+    if np.ndim(candidate) == 0:
+        return complex(candidate_arr[0])
+    return candidate_arr
+
+
 def load_m1(path):
     """Load M1 LoS: returns {freq, LL, LR, RL, RR} as arrays."""
     df = pd.read_csv(path)
@@ -173,7 +188,7 @@ for mat in MATERIALS:
         
         # Γ̂_X = sqrt( h̃_LR · h̃_RL / (h3_RR · h3_LL) )
         ratio = (ht['LR'] * ht['RL']) / (h3['RR'] * h3['LL'])
-        Gamma_X = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+        Gamma_X = anchored_geometric_mean(ratio, ht['LR'] / h3['RR'])
         
         gamma[mat][t] = {'Gamma_X': Gamma_X}
 

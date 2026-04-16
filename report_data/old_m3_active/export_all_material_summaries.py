@@ -25,6 +25,21 @@ def parse_complex(magnitude: np.ndarray, phase_deg: np.ndarray) -> np.ndarray:
     return magnitude * np.exp(1j * np.deg2rad(phase_deg))
 
 
+def anchored_geometric_mean(ratio, anchor_approx):
+    """Resolve the sqrt-branch sign using a single-branch phase anchor."""
+    candidate = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+    candidate_arr = np.atleast_1d(np.asarray(candidate, dtype=complex)).copy()
+    anchor_arr = np.atleast_1d(np.asarray(anchor_approx, dtype=complex))
+    valid = np.abs(anchor_arr) > 1e-18
+    phase_delta = np.zeros(candidate_arr.shape, dtype=float)
+    phase_delta[valid] = np.angle(candidate_arr[valid] / anchor_arr[valid])
+    flip = valid & (np.abs(phase_delta) > (np.pi / 2))
+    candidate_arr[flip] *= -1.0
+    if np.ndim(candidate) == 0:
+        return complex(candidate_arr[0])
+    return candidate_arr
+
+
 def load_m1(path: Path, channels: list[str]) -> dict[str, np.ndarray]:
     df = pd.read_csv(path)
     cols = df.columns.tolist()
@@ -100,7 +115,7 @@ def build_cp_summary() -> pd.DataFrame:
             ht = {ch: m2[material][theta][ch] - m1[ch] for ch in CP_CHANNELS}
             h3 = m3[theta]
             ratio = (ht["LR"] * ht["RL"]) / (h3["RR"] * h3["LL"])
-            gamma_x = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+            gamma_x = anchored_geometric_mean(ratio, ht["LR"] / h3["RR"])
             gamma_c_raw = ht["RR"] / h3["RR"]
             eps_eff = h3["LR"] / h3["RR"]
             gamma_c_cor = gamma_c_raw - eps_eff * gamma_x
@@ -114,9 +129,7 @@ def build_cp_summary() -> pd.DataFrame:
             gx_lr = ht_metal["LR"] / ht_pec["LR"]
             gx_rl = ht_metal["RL"] / ht_pec["RL"]
             metal_ratio = gx_lr * gx_rl
-            gamma_x_metal_norm = np.sqrt(np.abs(metal_ratio)) * np.exp(
-                1j * np.angle(metal_ratio) / 2
-            )
+            gamma_x_metal_norm = anchored_geometric_mean(metal_ratio, gx_lr)
 
             gamma_x_mag = band_mean_abs(gamma_x)
             gamma_c_cor_mag = band_mean_abs(gamma_c_cor)
@@ -225,7 +238,7 @@ def build_triple_summary() -> pd.DataFrame:
             ht = {ch: cp_m2[material][theta][ch] - cp_m1[ch] for ch in CP_CHANNELS}
             h3 = cp_m3[theta]
             ratio = (ht["LR"] * ht["RL"]) / (h3["RR"] * h3["LL"])
-            gamma_x = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+            gamma_x = anchored_geometric_mean(ratio, ht["LR"] / h3["RR"])
             eps_eff = h3["LR"] / h3["RR"]
             gamma_c_cor = ht["RR"] / h3["RR"] - eps_eff * gamma_x
             cp_r_te_mag = band_mean_abs(gamma_x + gamma_c_cor)
@@ -270,7 +283,7 @@ def build_suppression_long() -> pd.DataFrame:
             ht_cp = {ch: cp_m2[material][theta][ch] - cp_m1[ch] for ch in CP_CHANNELS}
             h3 = cp_m3[theta]
             ratio = (ht_cp["LR"] * ht_cp["RL"]) / (h3["RR"] * h3["LL"])
-            gamma_x = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+            gamma_x = anchored_geometric_mean(ratio, ht_cp["LR"] / h3["RR"])
             eps_eff = h3["LR"] / h3["RR"]
             gamma_c_cor = ht_cp["RR"] / h3["RR"] - eps_eff * gamma_x
             gamma_c_cor_mag = band_mean_abs(gamma_c_cor)

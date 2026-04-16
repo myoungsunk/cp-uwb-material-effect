@@ -1,0 +1,7 @@
+variant,n_rows,delta_negative_rows,residual_below_ideal_rows,residual_gt_ideal_rows,mean_gain_db,mean_delta_vs_ideal_db,note,replay_vs_stage4f_max_abs_mag_diff,replay_vs_stage4f_max_abs_gain_diff_db
+locked_raw_stage4f_band,23,0,0,23,8.771668465818818,6.885520519798557,Locked stage4f raw baseline for context.,4.440892098500626e-16,8.43769498715119e-15
+locked_eff_stage4f_band,23,16,16,7,18.776478462816033,-3.1192894771986603,Locked stage4f eff baseline for context.,4.440892098500626e-16,8.43769498715119e-15
+cp_metal_norm_ideal_anchor_band,23,0,0,23,-2.6389981578117934,18.29618714342917,Independent replay from stage3 freq export with ideal-anchor numerator B_mag.,4.440892098500626e-16,8.43769498715119e-15
+cp_metal_norm_sys_anchor_band,23,0,0,23,-3.061211426322951,18.718400411940326,Same replay but with the same-stage CP numerator B_cp_proxy_mag.,4.440892098500626e-16,8.43769498715119e-15
+cp_metal_norm_ideal_anchor_6p5,23,0,0,23,-2.9995196523163687,18.65670863793374,Nearest-point replay at 6.5 GHz with ideal-anchor numerator B_mag.,4.440892098500626e-16,8.43769498715119e-15
+cp_metal_norm_sys_anchor_6p5,23,0,0,23,-3.269831684107433,18.927020669724804,Nearest-point replay at 6.5 GHz with same-stage numerator B_cp_proxy(f).,4.440892098500626e-16,8.43769498715119e-15

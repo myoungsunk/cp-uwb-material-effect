@@ -1,0 +1,4 @@
+requested_freq_ghz,actual_freq_ghz,selector_label,ideal_match_available_in_bundle,n_rows,raw_below_ideal_rows,eff_below_ideal_rows,lp_below_ideal_rows,band_raw_below_ideal_rows,band_eff_below_ideal_rows,band_lp_below_ideal_rows,pass_criterion_all_zero,selection_note
+5.0,6.24,lower_band_edge,True,23,1,9,12,0,8,15,False,Matched to same-frequency Stage 1/2 ideal truth.
+6.5,6.5,center_near_6p5,True,23,0,15,15,0,8,15,False,Matched to same-frequency Stage 1/2 ideal truth.
+8.0,6.74,upper_band_edge,True,23,0,12,12,0,8,15,False,Matched to same-frequency Stage 1/2 ideal truth.

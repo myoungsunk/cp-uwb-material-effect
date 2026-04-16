@@ -1,0 +1,9 @@
+variant,n_rows,violation_rows,pass_lt_5_rows,note
+locked_raw_stage4f_band,23,0,True,Locked Stage 4 raw baseline copied from stage4f.
+locked_eff_stage4f_band,23,16,False,Locked Stage 4 eff baseline copied from stage4f.
+shared_eff_replay_band,23,8,False,Replayed from current freq-resolved export using the same shared eps model.
+lp_target_pointwise_band,23,15,False,Pointwise eps_obs_lp replay; by construction it reproduces the LP bridge target.
+ideal_center_const_band,23,3,True,Angle-specific eps_obs_ideal(6.5 GHz) replayed as a constant across the band.
+shared_eff_replay_6p5,23,15,False,Single-frequency 6.5 GHz replay from the current shared eps model.
+lp_target_pointwise_6p5,23,14,False,Single-frequency 6.5 GHz replay from pointwise LP target eps.
+ideal_center_const_6p5,23,2,True,Single-frequency 6.5 GHz replay using eps_obs_ideal(6.5 GHz).

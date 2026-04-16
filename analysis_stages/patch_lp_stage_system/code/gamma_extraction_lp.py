@@ -90,6 +90,21 @@ def find_repo_root(start: Path) -> Path:
     raise FileNotFoundError("Could not locate repository root from script path.")
 
 
+def anchored_geometric_mean(ratio, anchor_approx):
+    """Resolve the sqrt-branch sign using a single-branch phase anchor."""
+    candidate = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+    candidate_arr = np.atleast_1d(np.asarray(candidate, dtype=complex)).copy()
+    anchor_arr = np.atleast_1d(np.asarray(anchor_approx, dtype=complex))
+    valid = np.abs(anchor_arr) > 1e-18
+    phase_delta = np.zeros(candidate_arr.shape, dtype=float)
+    phase_delta[valid] = np.angle(candidate_arr[valid] / anchor_arr[valid])
+    flip = valid & (np.abs(phase_delta) > (np.pi / 2))
+    candidate_arr[flip] *= -1.0
+    if np.ndim(candidate) == 0:
+        return complex(candidate_arr[0])
+    return candidate_arr
+
+
 def parse_complex(magnitude: np.ndarray, phase_deg: np.ndarray) -> np.ndarray:
     return magnitude * np.exp(1j * np.deg2rad(phase_deg))
 
@@ -273,7 +288,7 @@ def compute_cp_patch_stage(cp_dir: Path) -> tuple[dict, np.ndarray, np.ndarray]:
             h_tilde = {ch: h2[ch] - m1[ch] for ch in CP_CHANNELS}
 
             ratio = (h_tilde["LR"] * h_tilde["RL"]) / (h3["RR"] * h3["LL"])
-            gamma_x = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+            gamma_x = anchored_geometric_mean(ratio, h_tilde["LR"] / h3["RR"])
 
             eps_eff = h3["LR"] / h3["RR"]
             gamma_c_raw = h_tilde["RR"] / h3["RR"]

@@ -77,6 +77,21 @@ def fresnel_slab(eps_r, tan_d, theta_deg, thickness_mm, freq_ghz):
 def parse_c(mag, phase_deg):
     return mag * np.exp(1j * np.deg2rad(phase_deg))
 
+
+def anchored_geometric_mean(ratio, anchor_approx):
+    """Resolve the sqrt-branch sign using a single-branch phase anchor."""
+    candidate = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+    candidate_arr = np.atleast_1d(np.asarray(candidate, dtype=complex)).copy()
+    anchor_arr = np.atleast_1d(np.asarray(anchor_approx, dtype=complex))
+    valid = np.abs(anchor_arr) > 1e-18
+    phase_delta = np.zeros(candidate_arr.shape, dtype=float)
+    phase_delta[valid] = np.angle(candidate_arr[valid] / anchor_arr[valid])
+    flip = valid & (np.abs(phase_delta) > (np.pi / 2))
+    candidate_arr[flip] *= -1.0
+    if np.ndim(candidate) == 0:
+        return complex(candidate_arr[0])
+    return candidate_arr
+
 def load_m1(path, ch_names):
     df = pd.read_csv(path); c = df.columns.tolist()
     out = {'freq': df[c[0]].values}
@@ -135,7 +150,7 @@ for mat in MATERIALS:
         h2 = cp_m2[mat][t]; h3 = cp_m3[t]
         ht = {ch: h2[ch] - cp_m1[ch] for ch in CP_CH}
         ratio = (ht['LR'] * ht['RL']) / (h3['RR'] * h3['LL'])
-        Gx = np.sqrt(np.abs(ratio)) * np.exp(1j * np.angle(ratio) / 2)
+        Gx = anchored_geometric_mean(ratio, ht['LR'] / h3['RR'])
         eps_eff = h3['LR'] / h3['RR']
         Gc_raw = ht['RR'] / h3['RR']
         Gc_cor = Gc_raw - eps_eff * Gx

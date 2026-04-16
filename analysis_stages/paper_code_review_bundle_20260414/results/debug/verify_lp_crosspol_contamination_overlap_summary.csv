@@ -1,0 +1,4 @@
+scope,n_rows,large_fresnel_dev_rows,pearson_corr_max_cross_vs_fresnel_dev,spearman_corr_max_cross_vs_fresnel_dev,rows_gt_pass_db,rows_gt_warning_db,rows_gt_elevated_db,rows_gt_dominant_db,overlap_warning_large_dev_rows,overlap_elevated_large_dev_rows,overlap_dominant_large_dev_rows
+all,39,2,0.781668644818032,0.5989878542510122,39,39,13,5,2,2,2
+main_range,23,0,0.3886812981887265,0.40217391304347827,23,23,3,0,0,0,0
+nonmain_range,16,2,0.8022791170591855,0.8058823529411765,16,16,10,5,2,2,2

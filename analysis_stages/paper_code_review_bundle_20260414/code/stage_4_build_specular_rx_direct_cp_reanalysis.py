@@ -47,6 +47,13 @@ MATERIAL_LABELS = {"concrete": "Concrete", "glass": "Glass", "wood": "Wood"}
 MATERIAL_COLORS = {"concrete": "#b91c1c", "glass": "#1d4ed8", "wood": "#047857"}
 
 
+def first_existing_path(*candidates: Path) -> Path:
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 def ideal_residual_mag_col(df: pd.DataFrame) -> str:
     return "Gamma_same_mag" if "Gamma_same_mag" in df.columns else "Gamma_X_mag"
 
@@ -63,47 +70,40 @@ def build_argparser() -> argparse.ArgumentParser:
         )
     )
     bundle_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(__file__).resolve().parents[3]
+    specular_stage_root = repo_root / "analysis_stages" / "specular_rx_direct_cp_reanalysis_20260414"
     parser.add_argument(
         "--los-csv",
         type=Path,
-        default=Path(
-            r"E:\0. CP Antenna\0. TRACK2_3_SIM\ANTENNA_SOURCE\sending\New Folder\LOS_SPECULAR_RX.csv"
-        ),
+        default=specular_stage_root / "LOS_SPECULAR_RX.csv",
     )
     parser.add_argument(
         "--m3-csv",
         type=Path,
-        default=Path(
-            r"E:\0. CP Antenna\0. TRACK2_3_SIM\ANTENNA_SOURCE\sending\New Folder\M3_SPECULAR_RX.csv"
-        ),
+        default=specular_stage_root / "M3_SPECULAR_RX.csv",
     )
     parser.add_argument(
         "--pec-csv",
         type=Path,
-        default=Path(
-            r"E:\0. CP Antenna\0. TRACK2_3_SIM\ANTENNA_SOURCE\sending\New Folder\PEC_SPECULAR_RX.csv"
-        ),
+        default=specular_stage_root / "PEC_SPECULAR_RX.csv",
     )
     parser.add_argument(
         "--concrete-csv",
         type=Path,
-        default=Path(
-            r"E:\0. CP Antenna\0. TRACK2_3_SIM\ANTENNA_SOURCE\sending\New Folder\CONCRETE_SPECULAR_RX.csv"
-        ),
+        default=specular_stage_root / "CONCRETE_SPECULAR_RX.csv",
     )
     parser.add_argument(
         "--glass-csv",
         type=Path,
-        default=Path(
-            r"E:\0. CP Antenna\0. TRACK2_3_SIM\ANTENNA_SOURCE\sending\New Folder\GLSASS_SPECULAR_RX.csv"
+        default=first_existing_path(
+            specular_stage_root / "GLASS_SPECULAR_RX.csv",
+            specular_stage_root / "GLSASS_SPECULAR_RX.csv",
         ),
     )
     parser.add_argument(
         "--wood-csv",
         type=Path,
-        default=Path(
-            r"E:\0. CP Antenna\0. TRACK2_3_SIM\ANTENNA_SOURCE\sending\New Folder\WOOD_SPECULAR_RX.csv"
-        ),
+        default=specular_stage_root / "WOOD_SPECULAR_RX.csv",
     )
     parser.add_argument(
         "--linear-truth",
@@ -125,10 +125,10 @@ def build_argparser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--stage4f-summary",
         type=Path,
-        default=repo_root
-        / "analysis_stages"
+        default=bundle_root
+        / "data"
+        / "stage_4"
         / "stage4f_raw_primary_dual_20260414"
-        / "results"
         / "table1_raw_primary_means.csv",
     )
     parser.add_argument(

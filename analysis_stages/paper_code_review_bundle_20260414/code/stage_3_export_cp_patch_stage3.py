@@ -78,6 +78,33 @@ def anchored_geometric_mean(ratio, anchor_approx):
     return candidate_arr
 
 
+def add_band_complex_export(
+    row: dict[str, float | bool | str],
+    prefix: str,
+    mean_value: complex,
+    values: np.ndarray,
+) -> None:
+    mean_of_abs_value = mean_abs(values)
+    row[f"{prefix}_real"] = float(mean_value.real)
+    row[f"{prefix}_imag"] = float(mean_value.imag)
+    row[f"{prefix}_mag"] = mean_of_abs_value
+    row[f"{prefix}_abs_of_mean"] = float(np.abs(mean_value))
+    row[f"{prefix}_mean_of_abs"] = mean_of_abs_value
+
+
+def add_pointwise_complex_export(
+    row: dict[str, float | bool | str],
+    prefix: str,
+    value: complex,
+) -> None:
+    mag = float(np.abs(value))
+    row[f"{prefix}_real"] = float(np.real(value))
+    row[f"{prefix}_imag"] = float(np.imag(value))
+    row[f"{prefix}_mag"] = mag
+    row[f"{prefix}_abs_of_mean"] = mag
+    row[f"{prefix}_mean_of_abs"] = mag
+
+
 def keep_final_theta(theta_deg: float) -> bool:
     nearest = round(theta_deg / 5.0) * 5.0
     return abs(theta_deg - nearest) < 1e-9
@@ -170,65 +197,63 @@ def main() -> None:
                 note = "Outside the material-specific paper main range."
 
             if keep_final_theta(theta):
-                band_rows.append(
-                    {
-                        "material": material,
-                        "theta_deg": float(theta),
-                        "freq_start_ghz": float(freq[0]),
-                        "freq_stop_ghz": float(freq[-1]),
-                        "freq_center_ghz": float(np.mean(freq)),
-                        "n_freq": int(len(freq)),
-                        "gamma_hat_x_cp_sys_real": float(gamma_x_mean.real),
-                        "gamma_hat_x_cp_sys_imag": float(gamma_x_mean.imag),
-                        "gamma_hat_x_cp_sys_mag": mean_abs(gamma_x),
-                        "gamma_hat_c_cp_raw_real": float(gamma_c_raw_mean.real),
-                        "gamma_hat_c_cp_raw_imag": float(gamma_c_raw_mean.imag),
-                        "gamma_hat_c_cp_raw_mag": mean_abs(gamma_c_raw),
-                        "gamma_hat_c_cp_eff_real": float(gamma_c_eff_mean.real),
-                        "gamma_hat_c_cp_eff_imag": float(gamma_c_eff_mean.imag),
-                        "gamma_hat_c_cp_eff_mag": mean_abs(gamma_c_eff),
-                        "r_te_proxy_real": float(r_te_mean.real),
-                        "r_te_proxy_imag": float(r_te_mean.imag),
-                        "r_te_proxy_mag": mean_abs(r_te_proxy),
-                        "r_tm_proxy_real": float(r_tm_mean.real),
-                        "r_tm_proxy_imag": float(r_tm_mean.imag),
-                        "r_tm_proxy_mag": mean_abs(r_tm_proxy),
-                        "xpd_eff_db": db20(
-                            mean_abs(gamma_x) / max(mean_abs(gamma_c_eff), 1e-12)
-                        ),
-                        "reciprocity_dev_db": reciprocity_dev_db,
-                        "leakage_lr_rr_db": leakage_lr_rr_db,
-                        "leakage_rl_ll_db": leakage_rl_ll_db,
-                        "port_asym_db": port_asym_db,
-                        "use_for_main_claim_candidate": bool(use_for_main),
-                        "note": note,
-                    }
+                band_row: dict[str, float | bool | str] = {
+                    "material": material,
+                    "theta_deg": float(theta),
+                    "freq_start_ghz": float(freq[0]),
+                    "freq_stop_ghz": float(freq[-1]),
+                    "freq_center_ghz": float(np.mean(freq)),
+                    "n_freq": int(len(freq)),
+                    "xpd_eff_db": db20(
+                        mean_abs(gamma_x) / max(mean_abs(gamma_c_eff), 1e-12)
+                    ),
+                    "reciprocity_dev_db": reciprocity_dev_db,
+                    "leakage_lr_rr_db": leakage_lr_rr_db,
+                    "leakage_rl_ll_db": leakage_rl_ll_db,
+                    "port_asym_db": port_asym_db,
+                    "use_for_main_claim_candidate": bool(use_for_main),
+                    "note": note,
+                }
+                add_band_complex_export(band_row, "gamma_hat_x_cp_sys", gamma_x_mean, gamma_x)
+                add_band_complex_export(band_row, "gamma_hat_c_cp_raw", gamma_c_raw_mean, gamma_c_raw)
+                add_band_complex_export(band_row, "gamma_hat_c_cp_eff", gamma_c_eff_mean, gamma_c_eff)
+                add_band_complex_export(band_row, "r_te_proxy", r_te_mean, r_te_proxy)
+                add_band_complex_export(band_row, "r_tm_proxy", r_tm_mean, r_tm_proxy)
+                band_row["B_cp_proxy_mag"] = max(
+                    float(band_row["r_te_proxy_mag"]),
+                    float(band_row["r_tm_proxy_mag"]),
                 )
+                band_row["G_cp_raw_sys_db"] = db20(
+                    float(band_row["B_cp_proxy_mag"]) / max(float(band_row["gamma_hat_c_cp_raw_mag"]), 1e-12)
+                )
+                band_row["G_cp_eff_sys_db"] = db20(
+                    float(band_row["B_cp_proxy_mag"]) / max(float(band_row["gamma_hat_c_cp_eff_mag"]), 1e-12)
+                )
+                band_rows.append(band_row)
 
             if args.write_freq_resolved and keep_final_theta(theta):
                 for idx, freq_ghz in enumerate(freq):
-                    freq_rows.append(
-                        {
-                            "material": material,
-                            "theta_deg": float(theta),
-                            "freq_ghz": float(freq_ghz),
-                            "gamma_hat_x_cp_sys_real": float(np.real(gamma_x[idx])),
-                            "gamma_hat_x_cp_sys_imag": float(np.imag(gamma_x[idx])),
-                            "gamma_hat_x_cp_sys_mag": float(np.abs(gamma_x[idx])),
-                            "gamma_hat_c_cp_raw_real": float(np.real(gamma_c_raw[idx])),
-                            "gamma_hat_c_cp_raw_imag": float(np.imag(gamma_c_raw[idx])),
-                            "gamma_hat_c_cp_raw_mag": float(np.abs(gamma_c_raw[idx])),
-                            "gamma_hat_c_cp_eff_real": float(np.real(gamma_c_eff[idx])),
-                            "gamma_hat_c_cp_eff_imag": float(np.imag(gamma_c_eff[idx])),
-                            "gamma_hat_c_cp_eff_mag": float(np.abs(gamma_c_eff[idx])),
-                            "r_te_proxy_real": float(np.real(r_te_proxy[idx])),
-                            "r_te_proxy_imag": float(np.imag(r_te_proxy[idx])),
-                            "r_te_proxy_mag": float(np.abs(r_te_proxy[idx])),
-                            "r_tm_proxy_real": float(np.real(r_tm_proxy[idx])),
-                            "r_tm_proxy_imag": float(np.imag(r_tm_proxy[idx])),
-                            "r_tm_proxy_mag": float(np.abs(r_tm_proxy[idx])),
-                        }
+                    freq_row: dict[str, float | bool | str] = {
+                        "material": material,
+                        "theta_deg": float(theta),
+                        "freq_ghz": float(freq_ghz),
+                    }
+                    add_pointwise_complex_export(freq_row, "gamma_hat_x_cp_sys", gamma_x[idx])
+                    add_pointwise_complex_export(freq_row, "gamma_hat_c_cp_raw", gamma_c_raw[idx])
+                    add_pointwise_complex_export(freq_row, "gamma_hat_c_cp_eff", gamma_c_eff[idx])
+                    add_pointwise_complex_export(freq_row, "r_te_proxy", r_te_proxy[idx])
+                    add_pointwise_complex_export(freq_row, "r_tm_proxy", r_tm_proxy[idx])
+                    freq_row["B_cp_proxy_mag"] = max(
+                        float(freq_row["r_te_proxy_mag"]),
+                        float(freq_row["r_tm_proxy_mag"]),
                     )
+                    freq_row["G_cp_raw_sys_db"] = db20(
+                        float(freq_row["B_cp_proxy_mag"]) / max(float(freq_row["gamma_hat_c_cp_raw_mag"]), 1e-12)
+                    )
+                    freq_row["G_cp_eff_sys_db"] = db20(
+                        float(freq_row["B_cp_proxy_mag"]) / max(float(freq_row["gamma_hat_c_cp_eff_mag"]), 1e-12)
+                    )
+                    freq_rows.append(freq_row)
 
     band_df = pd.DataFrame(band_rows).sort_values(["material", "theta_deg"]).reset_index(drop=True)
     band_path = output_dir / "patch_cp_extracted.csv"

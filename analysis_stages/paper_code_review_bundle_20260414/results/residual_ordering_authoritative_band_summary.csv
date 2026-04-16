@@ -1,0 +1,5 @@
+material,freq_start_ghz,freq_stop_ghz,freq_center_ghz,n_freq,n_rows,raw_below_ideal_rows,eff_below_ideal_rows,lp_below_ideal_rows,cp_raw_sys_negative_rows,cp_eff_sys_negative_rows,lp_sys_negative_rows,both_lp_and_cp_eff_below_ideal_rows
+concrete,6.24,6.74,6.489999999999999,501,8,0,5,4,0,5,4,4
+glass,6.24,6.74,6.489999999999999,501,9,0,6,6,0,0,6,6
+wood,6.24,6.74,6.489999999999999,501,6,0,5,5,0,1,5,5
+overall,6.24,6.74,6.49,501,23,0,16,15,0,6,15,15

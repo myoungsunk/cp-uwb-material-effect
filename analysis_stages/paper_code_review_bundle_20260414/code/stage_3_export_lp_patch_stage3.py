@@ -105,6 +105,33 @@ def cp_from_te_tm(r_te: np.ndarray, r_tm: np.ndarray) -> tuple[np.ndarray, np.nd
     return gamma_x, gamma_c
 
 
+def add_band_complex_export(
+    row: dict[str, float | bool | str],
+    prefix: str,
+    mean_value: complex,
+    values: np.ndarray,
+) -> None:
+    mean_of_abs_value = mean_abs(values)
+    row[f"{prefix}_real"] = float(mean_value.real)
+    row[f"{prefix}_imag"] = float(mean_value.imag)
+    row[f"{prefix}_mag"] = mean_of_abs_value
+    row[f"{prefix}_abs_of_mean"] = float(np.abs(mean_value))
+    row[f"{prefix}_mean_of_abs"] = mean_of_abs_value
+
+
+def add_pointwise_complex_export(
+    row: dict[str, float | bool | str],
+    prefix: str,
+    value: complex,
+) -> None:
+    mag = float(np.abs(value))
+    row[f"{prefix}_real"] = float(np.real(value))
+    row[f"{prefix}_imag"] = float(np.imag(value))
+    row[f"{prefix}_mag"] = mag
+    row[f"{prefix}_abs_of_mean"] = mag
+    row[f"{prefix}_mean_of_abs"] = mag
+
+
 def build_argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Export paper-final Stage 3 LP patch tables in an isolated workspace."
@@ -182,67 +209,55 @@ def main() -> None:
             else:
                 note = "Outside the material-specific range or leakage threshold."
 
-            band_rows.append(
-                {
-                    "material": material,
-                    "theta_deg": float(theta),
-                    "freq_start_ghz": float(freq[0]),
-                    "freq_stop_ghz": float(freq[-1]),
-                    "freq_center_ghz": float(np.mean(freq)),
-                    "n_freq": int(len(freq)),
-                    "r_hat_yy_sys_real": float(r_yy_mean.real),
-                    "r_hat_yy_sys_imag": float(r_yy_mean.imag),
-                    "r_hat_yy_sys_mag": mean_abs(r_yy),
-                    "r_hat_zz_sys_real": float(r_zz_mean.real),
-                    "r_hat_zz_sys_imag": float(r_zz_mean.imag),
-                    "r_hat_zz_sys_mag": mean_abs(r_zz),
-                    "r_hat_yz_sys_real": float(r_yz_mean.real),
-                    "r_hat_yz_sys_imag": float(r_yz_mean.imag),
-                    "r_hat_yz_sys_mag": mean_abs(r_yz),
-                    "r_hat_zy_sys_real": float(r_zy_mean.real),
-                    "r_hat_zy_sys_imag": float(r_zy_mean.imag),
-                    "r_hat_zy_sys_mag": mean_abs(r_zy),
-                    "gamma_x_from_lp_real": float(gamma_x_mean.real),
-                    "gamma_x_from_lp_imag": float(gamma_x_mean.imag),
-                    "gamma_x_from_lp_mag": mean_abs(gamma_x),
-                    "gamma_c_from_lp_real": float(gamma_c_mean.real),
-                    "gamma_c_from_lp_imag": float(gamma_c_mean.imag),
-                    "gamma_c_from_lp_mag": mean_abs(gamma_c),
-                    "leakage_yz_db": leakage_yz_db,
-                    "leakage_zy_db": leakage_zy_db,
-                    "leakage_max_db": leakage_max_db,
-                    "use_for_main_claim_candidate": bool(use_for_main),
-                    "note": note,
-                }
+            band_row: dict[str, float | bool | str] = {
+                "material": material,
+                "theta_deg": float(theta),
+                "freq_start_ghz": float(freq[0]),
+                "freq_stop_ghz": float(freq[-1]),
+                "freq_center_ghz": float(np.mean(freq)),
+                "n_freq": int(len(freq)),
+                "leakage_yz_db": leakage_yz_db,
+                "leakage_zy_db": leakage_zy_db,
+                "leakage_max_db": leakage_max_db,
+                "use_for_main_claim_candidate": bool(use_for_main),
+                "note": note,
+            }
+            add_band_complex_export(band_row, "r_hat_yy_sys", r_yy_mean, r_yy)
+            add_band_complex_export(band_row, "r_hat_zz_sys", r_zz_mean, r_zz)
+            add_band_complex_export(band_row, "r_hat_yz_sys", r_yz_mean, r_yz)
+            add_band_complex_export(band_row, "r_hat_zy_sys", r_zy_mean, r_zy)
+            add_band_complex_export(band_row, "gamma_x_from_lp", gamma_x_mean, gamma_x)
+            add_band_complex_export(band_row, "gamma_c_from_lp", gamma_c_mean, gamma_c)
+            band_row["B_lp_sys_mag"] = max(
+                float(band_row["r_hat_yy_sys_mag"]),
+                float(band_row["r_hat_zz_sys_mag"]),
             )
+            band_row["G_lp_sys_db"] = db20(
+                float(band_row["B_lp_sys_mag"]) / max(float(band_row["gamma_x_from_lp_mag"]), 1e-12)
+            )
+            band_rows.append(band_row)
 
             if args.write_freq_resolved:
                 for idx, freq_ghz in enumerate(freq):
-                    freq_rows.append(
-                        {
-                            "material": material,
-                            "theta_deg": float(theta),
-                            "freq_ghz": float(freq_ghz),
-                            "r_hat_yy_sys_real": float(np.real(r_yy[idx])),
-                            "r_hat_yy_sys_imag": float(np.imag(r_yy[idx])),
-                            "r_hat_yy_sys_mag": float(np.abs(r_yy[idx])),
-                            "r_hat_zz_sys_real": float(np.real(r_zz[idx])),
-                            "r_hat_zz_sys_imag": float(np.imag(r_zz[idx])),
-                            "r_hat_zz_sys_mag": float(np.abs(r_zz[idx])),
-                            "r_hat_yz_sys_real": float(np.real(r_yz[idx])),
-                            "r_hat_yz_sys_imag": float(np.imag(r_yz[idx])),
-                            "r_hat_yz_sys_mag": float(np.abs(r_yz[idx])),
-                            "r_hat_zy_sys_real": float(np.real(r_zy[idx])),
-                            "r_hat_zy_sys_imag": float(np.imag(r_zy[idx])),
-                            "r_hat_zy_sys_mag": float(np.abs(r_zy[idx])),
-                            "gamma_x_from_lp_real": float(np.real(gamma_x[idx])),
-                            "gamma_x_from_lp_imag": float(np.imag(gamma_x[idx])),
-                            "gamma_x_from_lp_mag": float(np.abs(gamma_x[idx])),
-                            "gamma_c_from_lp_real": float(np.real(gamma_c[idx])),
-                            "gamma_c_from_lp_imag": float(np.imag(gamma_c[idx])),
-                            "gamma_c_from_lp_mag": float(np.abs(gamma_c[idx])),
-                        }
+                    freq_row: dict[str, float | bool | str] = {
+                        "material": material,
+                        "theta_deg": float(theta),
+                        "freq_ghz": float(freq_ghz),
+                    }
+                    add_pointwise_complex_export(freq_row, "r_hat_yy_sys", r_yy[idx])
+                    add_pointwise_complex_export(freq_row, "r_hat_zz_sys", r_zz[idx])
+                    add_pointwise_complex_export(freq_row, "r_hat_yz_sys", r_yz[idx])
+                    add_pointwise_complex_export(freq_row, "r_hat_zy_sys", r_zy[idx])
+                    add_pointwise_complex_export(freq_row, "gamma_x_from_lp", gamma_x[idx])
+                    add_pointwise_complex_export(freq_row, "gamma_c_from_lp", gamma_c[idx])
+                    freq_row["B_lp_sys_mag"] = max(
+                        float(freq_row["r_hat_yy_sys_mag"]),
+                        float(freq_row["r_hat_zz_sys_mag"]),
                     )
+                    freq_row["G_lp_sys_db"] = db20(
+                        float(freq_row["B_lp_sys_mag"]) / max(float(freq_row["gamma_x_from_lp_mag"]), 1e-12)
+                    )
+                    freq_rows.append(freq_row)
 
     band_df = pd.DataFrame(band_rows).sort_values(["material", "theta_deg"]).reset_index(drop=True)
     band_path = output_dir / "patch_lp_extracted.csv"
